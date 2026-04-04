@@ -1,0 +1,75 @@
+project_id = "jufcbtmikmdboaoacegt"
+
+[functions.categorize-media]
+verify_jwt = false
+
+[functions.suggest-media]
+verify_jwt = false
+
+[functions.forum-ai]
+verify_jwt = false
+
+[functions.ai-router]
+verify_jwt = false
+
+[functions.weekly-strategy-review]
+verify_jwt = false
+
+[functions.generate-slide-image]
+verify_jwt = false
+
+[functions.generate-carousel-visual]
+verify_jwt = false
+
+[functions.generate-video-assets]
+verify_jwt = false
+
+[functions.extract-strategy-metafields]
+verify_jwt = false
+
+[functions.fill-playbook-from-knowledge]
+verify_jwt = false
+
+[functions.fill-metafields-from-knowledge]
+verify_jwt = false
+
+[functions.analyze-creative-input]
+verify_jwt = false
+
+[functions.generate-carousel]
+verify_jwt = false
+
+[functions.analyze-benchmark]
+verify_jwt = false
+
+[functions.generate-campaign-plan]
+verify_jwt = false
+
+[functions.analyze-brand-document]
+
+[functions.generate-narrative-carousel]
+verify_jwt = false
+
+[functions.verify-carousel-facts]
+verify_jwt = false
+
+[functions.research-topic]
+verify_jwt = false
+
+[functions.sync-meta-insights]
+verify_jwt = false
+
+[functions.sync-ga4]
+verify_jwt = false
+
+[functions.sync-google-ads]
+verify_jwt = false
+
+[functions.sync-firestore-data]
+verify_jwt = false
+
+[functions.login-lookup]
+verify_jwt = false
+
+[functions.analyze-monthly-report]
+verify_jwt = false
