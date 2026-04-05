@@ -109,3 +109,82 @@ export async function generateSlideImage(params: {
   if (error) throw new Error(error.message || 'Erro ao gerar imagem');
   return data;
 }
+
+export interface MediaSuggestion {
+  id: string;
+  url: string;
+  score: number;
+  reason: string;
+  mood?: string;
+  tags?: string[];
+}
+
+export async function suggestMedia(params: {
+  headline: string;
+  subtext?: string;
+  imagePrompt?: string;
+  angle?: string;
+}): Promise<{ suggestions: MediaSuggestion[] }> {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const { data, error } = await supabase.functions.invoke('suggest-media', {
+    body: { ...params, userId: session?.user?.id },
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+  });
+
+  if (error) return { suggestions: [] };
+  return data ?? { suggestions: [] };
+}
+
+export async function saveImageToLibrary(imageUrl: string, context: string): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user?.id) return null;
+
+  try {
+    let finalUrl = imageUrl;
+
+    // If base64, upload to storage for persistence
+    if (imageUrl.startsWith('data:image/')) {
+      const mimeMatch = imageUrl.match(/^data:(image\/\w+);base64,/);
+      const ext = mimeMatch ? mimeMatch[1].split('/')[1] : 'png';
+      const base64Data = imageUrl.split(',')[1];
+      const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      const blob = new Blob([byteArray], { type: mimeMatch?.[1] || 'image/png' });
+      const storagePath = `${session.user.id}/ai-gen-${Date.now()}.${ext}`;
+
+      const { error: upErr } = await supabase.storage
+        .from('media-library')
+        .upload(storagePath, blob, { contentType: blob.type, upsert: false });
+      if (upErr) return null;
+
+      const { data: urlData } = supabase.storage.from('media-library').getPublicUrl(storagePath);
+      finalUrl = urlData.publicUrl;
+    }
+
+    const { data: insertData, error: insertError } = await supabase
+      .from('media_library')
+      .insert({
+        workspace_id: session.user.id,
+        file_name: `ai-gen-${Date.now()}.png`,
+        storage_path: finalUrl,
+        public_url: finalUrl,
+        file_size: 0,
+        mime_type: 'image/png',
+        ai_description: context.slice(0, 200),
+        tagging_status: 'pending',
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !insertData?.id) return null;
+
+    // Trigger auto-tagging in background
+    supabase.functions.invoke('tag-media', {
+      body: { media_id: insertData.id, image_url: finalUrl },
+    }).catch(() => {});
+
+    return insertData.id;
+  } catch {
+    return null;
+  }
+}
