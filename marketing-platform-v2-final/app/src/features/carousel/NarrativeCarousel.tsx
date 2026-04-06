@@ -38,6 +38,7 @@ export function NarrativeCarousel() {
   const [settingsMap, setSettingsMap] = useState<Record<number, SlideSettings>>({});
   const [imageMap, setImageMap] = useState<Record<number, string | null>>({});
   const [exporting, setExporting] = useState(false);
+  const [exportingSlide, setExportingSlide] = useState<number | null>(null);
 
   const activeTheme = (themeOverride || carousel?.theme || 'dqef-editorial') as NarrativeThemeId;
   const totalSlides = carousel?.slides.length ?? 0;
@@ -65,6 +66,36 @@ export function NarrativeCarousel() {
     const slides = [...carousel.slides];
     slides[index] = { ...slides[index], [field]: value };
     setCarousel({ ...carousel, slides });
+  };
+
+  const handleExportSlide = async (slide: NarrativeSlide) => {
+    setExportingSlide(slide.number);
+    try {
+      const div = document.createElement('div');
+      div.style.cssText = 'position:fixed;top:-9999px;left:-9999px;pointer-events:none;';
+      document.body.appendChild(div);
+      const root = createRoot(div);
+      flushSync(() => root.render(
+        <NarrativeSlidePreview
+          slide={slide} theme={activeTheme}
+          imageUrl={imageMap[slide.number]}
+          settings={getSettings(slide.number)}
+          totalSlides={totalSlides}
+          width={1080} height={1350} isExport
+        />
+      ));
+      await document.fonts.ready;
+      await new Promise(r => setTimeout(r, 80));
+      const dataUrl = await toPng(div.firstElementChild as HTMLElement, { width: 1080, height: 1350, pixelRatio: 1 });
+      root.unmount();
+      document.body.removeChild(div);
+      Object.assign(document.createElement('a'), {
+        download: `dqef-slide-${slide.number}-${slide.type}.png`,
+        href: dataUrl,
+      }).click();
+    } finally {
+      setExportingSlide(null);
+    }
   };
 
   const handleExportZip = async () => {
@@ -230,6 +261,16 @@ export function NarrativeCarousel() {
                           title="Ajustes visuais"
                         >
                           <SlidersHorizontal className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleExportSlide(slide)}
+                          disabled={exportingSlide === slide.number}
+                          className="p-1.5 rounded-md bg-black/60 hover:bg-black/80 text-white transition-colors disabled:opacity-40"
+                          title="Download PNG 1080×1350"
+                        >
+                          {exportingSlide === slide.number
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <Download className="w-3 h-3" />}
                         </button>
                       </div>
                       {imgUrl && (
