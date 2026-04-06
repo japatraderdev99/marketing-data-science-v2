@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Sparkles, Loader2, RotateCcw, Download, Copy, Check } from 'lucide-react';
+import { Sparkles, Loader2, RotateCcw, Download, Copy, Check, ImageIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import type { CarouselThemeId, SlideOutput, SlideSettings } from '@/types';
 import { DEFAULT_SLIDE_SETTINGS } from '@/types';
 import { CAROUSEL_THEMES, ANGLES, CHANNELS } from '@/features/carousel/constants';
@@ -8,7 +9,7 @@ import { SlideControls } from '@/features/carousel/components/SlideControls';
 import { ThemeSelector } from '@/features/carousel/components/ThemeSelector';
 import { StrategyContext } from '@/components/shared/StrategyContext';
 import { NicheSelector } from '@/components/shared/NicheSelector';
-import { generateCarouselVisual } from '@/lib/ai';
+import { generateCarouselVisual, generateSlideImage, saveImageToLibrary } from '@/lib/ai';
 import { cn } from '@/lib/utils';
 
 /* NicheSelector replaces old flat PERSONAS buttons */
@@ -31,6 +32,8 @@ export function ArteUnica() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const theme = CAROUSEL_THEMES.find(t => t.id === themeId) || CAROUSEL_THEMES[0];
 
@@ -55,8 +58,30 @@ export function ArteUnica() {
     }
   }, [briefing, angle, persona, channel, objective]);
 
+  const handleGenerateImage = useCallback(async () => {
+    if (!slide) return;
+    const prompt = slide.imagePrompt || slide.visualDirection || `Professional marketing ad: ${slide.headline}. Documentary photography, Brazilian service provider, natural lighting.`;
+    setIsGeneratingImage(true);
+    try {
+      const data = await generateSlideImage({ imagePrompt: prompt, quality: 'high' });
+      const url = data.imageUrl || (data.imageBase64 ? `data:image/png;base64,${data.imageBase64}` : null);
+      if (url) {
+        setImageUrl(url);
+        saveImageToLibrary(url, prompt).catch(() => {});
+        toast.success('Imagem gerada!');
+      } else {
+        toast.error('Nenhuma imagem retornada');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar imagem');
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  }, [slide]);
+
   const handleReset = () => {
     setSlide(null);
+    setImageUrl(null);
     setSettings({ ...DEFAULT_SLIDE_SETTINGS });
     setError(null);
   };
@@ -203,8 +228,17 @@ export function ArteUnica() {
             {/* Canvas + Side Controls */}
             <div className="flex gap-5">
               {/* Preview */}
-              <div className="shrink-0">
-                <SlidePreview slide={slide} theme={theme} settings={settings} width={400} height={500} />
+              <div className="shrink-0 space-y-2">
+                <SlidePreview slide={slide} theme={theme} settings={settings} width={400} height={500} imageUrl={imageUrl} />
+                <button
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-brand/10 hover:bg-brand/20 text-brand rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                >
+                  {isGeneratingImage
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Gerando imagem...</>
+                    : <><ImageIcon className="w-3.5 h-3.5" />{imageUrl ? 'Regerar Imagem IA' : 'Gerar Imagem IA'}</>}
+                </button>
               </div>
 
               {/* Controls Panel */}

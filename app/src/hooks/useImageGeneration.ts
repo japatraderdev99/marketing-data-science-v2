@@ -39,10 +39,10 @@ export function useImageGeneration(): UseImageGenerationReturn {
     `Documentary photography style, raw authenticity. ` +
     `NO favelas, NO poverty imagery, NO racial stereotypes. NO text or words in the image.`;
 
-  const resolveImageUrl = async (data: { imageUrl: string | null; imageBase64: string | null }): Promise<string | null> => {
-    if (data.imageUrl && !data.imageUrl.startsWith('data:')) return data.imageUrl;
-    if (data.imageBase64) return `data:image/png;base64,${data.imageBase64}`;
+  const resolveImageUrl = (data: { imageUrl: string | null; imageBase64: string | null }): string | null => {
+    // Priority: direct URL > data URI already in imageUrl > raw base64
     if (data.imageUrl) return data.imageUrl;
+    if (data.imageBase64) return `data:image/png;base64,${data.imageBase64}`;
     return null;
   };
 
@@ -55,7 +55,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
     try {
       const fullPrompt = buildFullPrompt(prompt);
       const data = await generateSlideImage({ imagePrompt: fullPrompt, quality: 'standard' });
-      const url = await resolveImageUrl(data);
+      const url = resolveImageUrl(data);
       if (url) {
         onUpdate(id, url);
         saveImageToLibrary(url, prompt).catch(() => {});
@@ -64,7 +64,9 @@ export function useImageGeneration(): UseImageGenerationReturn {
         toast.error('Nenhuma imagem retornada pela IA');
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao gerar imagem');
+      const msg = err instanceof Error ? err.message : 'Erro ao gerar imagem';
+      console.error('Image gen error:', msg);
+      toast.error(msg);
     } finally {
       setGeneratingId(null);
     }
@@ -98,11 +100,13 @@ export function useImageGeneration(): UseImageGenerationReturn {
       for (let j = 0; j < results.length; j++) {
         const r = results[j];
         if (r.status === 'fulfilled') {
-          const url = await resolveImageUrl(r.value);
+          const url = resolveImageUrl(r.value);
           if (url) {
             onUpdate(chunk[j].id, url);
             saveImageToLibrary(url, chunk[j].imagePrompt || chunk[j].headline).catch(() => {});
           }
+        } else {
+          console.warn(`Batch image gen failed for ${chunk[j].id}:`, r.reason);
         }
       }
 

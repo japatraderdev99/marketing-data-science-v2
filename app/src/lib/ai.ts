@@ -97,7 +97,6 @@ export async function generateCreativeBatch(params: {
 export async function generateSlideImage(params: {
   imagePrompt: string;
   quality?: 'standard' | 'hq';
-  translateFirst?: boolean;
 }): Promise<{ imageUrl: string | null; imageBase64: string | null }> {
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -107,7 +106,17 @@ export async function generateSlideImage(params: {
   });
 
   if (error) throw new Error(error.message || 'Erro ao gerar imagem');
-  return data;
+  if (data?.error) throw new Error(data.error);
+
+  // Normalize response — ensure we always have a usable image
+  const imageUrl = data?.imageUrl || null;
+  const imageBase64 = data?.imageBase64 || null;
+
+  if (!imageUrl && !imageBase64) {
+    throw new Error(data?.details?.join('; ') || 'Nenhuma imagem retornada');
+  }
+
+  return { imageUrl, imageBase64 };
 }
 
 export interface MediaSuggestion {
@@ -134,6 +143,71 @@ export async function suggestMedia(params: {
 
   if (error) return { suggestions: [] };
   return data ?? { suggestions: [] };
+}
+
+export async function analyzeReference(params: {
+  referenceText: string;
+  referenceImageUrl?: string;
+  count: number;
+  angles: string[];
+  channel: string;
+  objective: string;
+  persona: string;
+  styles: { label: string; racional: string }[];
+}): Promise<{ success: boolean; result: { analysis: Record<string, string>; variations: Array<Record<string, unknown>> }; _meta?: Record<string, unknown> }> {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const { data, error } = await supabase.functions.invoke('analyze-reference', {
+    body: params,
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+  });
+
+  if (error) throw new Error(error.message || 'Erro ao analisar referência');
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+export async function categorizeMedia(params: {
+  imageUrl: string;
+  mediaId: string;
+}): Promise<{ category: string; subcategory?: string; tags: string[]; description: string; dignity_check: boolean }> {
+  const { data, error } = await supabase.functions.invoke('categorize-media', {
+    body: params,
+  });
+
+  if (error) throw new Error(error.message || 'Erro ao categorizar mídia');
+  return data;
+}
+
+export async function researchTopic(params: {
+  topic: string;
+  audience?: string;
+}): Promise<{ success: boolean; facts: Array<{ claim: string; source: string; year: number; url: string; country: string }>; research: string; citations: string[]; structured: boolean }> {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const { data, error } = await supabase.functions.invoke('research-topic', {
+    body: params,
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+  });
+
+  if (error) throw new Error(error.message || 'Erro na pesquisa');
+  if (!data?.success) throw new Error(data?.error || 'Pesquisa falhou');
+  return data;
+}
+
+export async function verifyCarouselFacts(params: {
+  slides: Array<{ number: number; headline: string; bodyText?: string | null }>;
+  facts: Array<{ claim: string; source: string; year: number; url: string; country: string }>;
+}): Promise<{ success: boolean; verification: Array<{ slideNumber: number; overallStatus: string; claims: Array<Record<string, unknown>> }> }> {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const { data, error } = await supabase.functions.invoke('verify-carousel-facts', {
+    body: params,
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+  });
+
+  if (error) throw new Error(error.message || 'Erro na verificação');
+  return data;
 }
 
 export async function saveImageToLibrary(imageUrl: string, context: string): Promise<string | null> {
