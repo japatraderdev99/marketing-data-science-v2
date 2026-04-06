@@ -3,10 +3,10 @@
   "configurations": [
     {
       "name": "vite-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["node_modules/.bin/vite", "--host"],
       "port": 5173,
-      "cwd": "app"
+      "cwd": "marketing-platform-v2-final/app"
     }
   ]
 }
