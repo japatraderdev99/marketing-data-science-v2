@@ -4,7 +4,7 @@
     {
       "name": "vite-dev",
       "runtimeExecutable": "/usr/local/bin/node",
-      "runtimeArgs": ["node_modules/.bin/vite", "--host"],
+      "runtimeArgs": ["node_modules/.bin/vite", "--host", "--port", "5173"],
       "port": 5173,
       "cwd": "marketing-platform-v2-final/app"
     }

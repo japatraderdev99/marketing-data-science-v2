@@ -14,9 +14,10 @@ interface BatchExportProps {
   theme: CarouselTheme;
   title: string;
   settingsMap?: Record<number, SlideSettings>;
+  slideImages?: Record<number, string>;
 }
 
-export function BatchExportButton({ slides, theme, title, settingsMap }: BatchExportProps) {
+export function BatchExportButton({ slides, theme, title, settingsMap, slideImages }: BatchExportProps) {
   const [exporting, setExporting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +43,7 @@ export function BatchExportButton({ slides, theme, title, settingsMap }: BatchEx
               width={1080}
               height={1350}
               showWatermark
+              imageUrl={slideImages?.[slide.number]}
               settings={settingsMap?.[slide.number] || DEFAULT_SLIDE_SETTINGS}
               isExport
             />,

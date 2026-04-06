@@ -3,16 +3,17 @@ import { Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import type { BatchVariation, VisualStyleId, CarouselThemeId, SlideSettings } from '@/types';
+import type { BatchVariation, VisualStyleId, CarouselThemeId, SlideSettings, CreativeFormat } from '@/types';
 import { DEFAULT_SLIDE_SETTINGS } from '@/types';
-import { CAROUSEL_THEMES, VISUAL_STYLES, ANGLES, CHANNELS } from '@/features/carousel/constants';
+import { CAROUSEL_THEMES, VISUAL_STYLES, ANGLES, CHANNELS, CREATIVE_FORMATS } from '@/features/carousel/constants';
 import { NicheSelector } from '@/components/shared/NicheSelector';
 import { SlidePreview } from '@/features/carousel/components/SlidePreview';
 import { VariationCard } from './VariationCard';
 import { MassControls } from './MassControls';
 import { StrategyContext } from '@/components/shared/StrategyContext';
 import { generateId, cn } from '@/lib/utils';
-import { generateCarouselVisual } from '@/lib/ai';
+import { generateCreativeBatch } from '@/lib/ai';
+import { useImageGeneration } from '@/hooks/useImageGeneration';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 
@@ -27,6 +28,7 @@ export function CriativoBatch() {
   const [style, setStyle] = useState<VisualStyleId>('impact-direct');
   const [count, setCount] = useState(3);
   const [themeId, setThemeId] = useState<CarouselThemeId>('brand-orange');
+  const [format, setFormat] = useState<CreativeFormat>(CREATIVE_FORMATS[0]);
   const [variations, setVariations] = useState<BatchVariation[]>([]);
   const [settingsMap, setSettingsMap] = useState<Record<string, SlideSettings>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -38,36 +40,50 @@ export function CriativoBatch() {
 
   const theme = CAROUSEL_THEMES.find((t) => t.id === themeId) || CAROUSEL_THEMES[0];
 
-  const getSettings = (id: string): SlideSettings => settingsMap[id] || { ...DEFAULT_SLIDE_SETTINGS };
+  const {
+    generatingId, generatingAll, searchingLibrary,
+    imageGenProgress, libraryProgress,
+    generateForVariation, generateAllImages,
+    searchLibraryForAll, searchLibraryForOne,
+  } = useImageGeneration();
 
+  const getSettings = (id: string): SlideSettings => settingsMap[id] || { ...DEFAULT_SLIDE_SETTINGS };
   const updateSettings = (id: string, updates: Partial<SlideSettings>) => {
     setSettingsMap(prev => ({ ...prev, [id]: { ...getSettings(id), ...updates } }));
   };
-
   const toggleSelect = (id: string) => setSelected(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
+  const updateVariationImage = useCallback((id: string, url: string) => {
+    setVariations(prev => prev.map(v => v.id === id ? { ...v, mediaUrl: url } : v));
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     setIsGenerating(true); setError(null); setVariations([]); setSettingsMap({});
-    const results: BatchVariation[] = [];
-    const chunks: number[][] = [];
-    for (let i = 0; i < count; i += 3) chunks.push(Array.from({ length: Math.min(3, count - i) }, (_, j) => i + j));
+    setProgress('Gerando variações com IA...');
     try {
-      for (const chunk of chunks) {
-        setProgress(`Gerando ${results.length + 1} de ${count}...`);
-        const promises = chunk.map(async (idx) => {
-          try {
-            const result = await generateCarouselVisual({ context: `${briefing}. Variação ${idx + 1}/${count}. Estilo: ${style}. Nichos: ${niches.join(', ')}`, angle, channel, tone: 'Peer-to-peer' });
-            const hookSlide = result.carousel?.slides?.[0];
-            if (!hookSlide) throw new Error('Sem slides');
-            return { id: generateId(), headline: hookSlide.headline || 'SEM TÍTULO', subtext: hookSlide.subtext || '', cta: result.carousel.slides?.[result.carousel.slides.length - 1]?.headline || 'CTA', style, imagePrompt: hookSlide.imagePrompt || undefined, suggested_tags: [], mediaUrl: null, status: 'done' as const };
-          } catch { return { id: generateId(), headline: 'ERRO NA GERAÇÃO', subtext: 'Tente novamente', cta: '', style, status: 'error' as const }; }
-        });
-        const batchResults = await Promise.allSettled(promises);
-        for (const r of batchResults) if (r.status === 'fulfilled') results.push(r.value);
-        setVariations([...results]);
-      }
-    } catch (err) { setError(err instanceof Error ? err.message : 'Erro na geração batch'); }
-    finally { setIsGenerating(false); setProgress(''); }
+      const result = await generateCreativeBatch({
+        briefing, angle, channel, niches, style, count,
+      });
+
+      const newVariations: BatchVariation[] = (result.variations || []).map((v: Record<string, unknown>) => ({
+        id: generateId(),
+        headline: (v.headline as string) || 'SEM TÍTULO',
+        subtext: (v.subtext as string) || '',
+        cta: (v.cta as string) || 'SAIBA MAIS',
+        style: (v.style as VisualStyleId) || style,
+        imagePrompt: (v.imagePrompt as string) || undefined,
+        suggested_tags: (v.suggested_tags as string[]) || [],
+        mediaUrl: null,
+        status: 'done' as const,
+      }));
+
+      if (!newVariations.length) throw new Error('IA não retornou variações');
+      setVariations(newVariations);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro na geração batch');
+    } finally {
+      setIsGenerating(false); setProgress('');
+    }
   }, [briefing, angle, channel, niches, style, count]);
 
   const handleExportSelected = async () => {
@@ -75,6 +91,7 @@ export function CriativoBatch() {
     if (!toExport.length) return;
     setExporting(true); setExportProgress({ current: 0, total: toExport.length });
     const zip = new JSZip();
+    const legendas: string[] = [];
     const container = document.createElement('div');
     container.style.cssText = 'position:fixed;top:-9999px;z-index:-1;';
     document.body.appendChild(container);
@@ -85,15 +102,29 @@ export function CriativoBatch() {
         const el = document.createElement('div'); container.appendChild(el);
         const slide = { number: 1, type: 'hook' as const, headline: v.headline, subtext: v.subtext, logic: '', visualDirection: '', needsMedia: false, bgStyle: 'dark' as const, layout: 'text-only' as const };
         const root = createRoot(el);
-        flushSync(() => { root.render(<SlidePreview slide={slide} theme={theme} width={1080} height={1350} settings={getSettings(v.id)} isExport />); });
+        flushSync(() => {
+          root.render(
+            <SlidePreview
+              slide={slide} theme={theme}
+              width={format.width} height={format.height}
+              settings={getSettings(v.id)} imageUrl={v.mediaUrl}
+              isExport
+            />,
+          );
+        });
         await document.fonts.ready;
-        await new Promise(r => setTimeout(r, 100));
-        const dataUrl = await toPng(el.firstElementChild as HTMLElement, { width: 1080, height: 1350, pixelRatio: 1 });
-        zip.file(`criativo-${v.id.slice(0, 8)}.png`, dataUrl.split(',')[1], { base64: true });
+        await new Promise(r => setTimeout(r, 150));
+        const dataUrl = await toPng(el.firstElementChild as HTMLElement, {
+          width: format.width, height: format.height, pixelRatio: 1,
+        });
+        const fileName = `DQEF-${v.style}-${i + 1}.png`;
+        zip.file(fileName, dataUrl.split(',')[1], { base64: true });
+        legendas.push(`--- ${fileName} ---\nHeadline: ${v.headline}\nSubtexto: ${v.subtext}\nCTA: ${v.cta}\n`);
         root.unmount(); el.remove();
       }
+      zip.file('legendas.txt', legendas.join('\n'));
       const blob = await zip.generateAsync({ type: 'blob' });
-      saveAs(blob, `batch_criativos_${new Date().toISOString().slice(0, 10)}.zip`);
+      saveAs(blob, `DQEF-criativos-${toExport.length}x-${Date.now()}.zip`);
     } finally { document.body.removeChild(container); setExporting(false); setExportProgress(null); }
   };
 
@@ -105,12 +136,10 @@ export function CriativoBatch() {
       return next;
     });
   };
-
   const applyCtaToAll = (cta: string) => {
     const targets = selected.size > 0 ? variations.filter(v => selected.has(v.id)) : variations;
     setVariations(prev => prev.map(v => targets.some(t => t.id === v.id) ? { ...v, cta } : v));
   };
-
   const deleteSelected = () => {
     setVariations(prev => prev.filter(v => !selected.has(v.id)));
     setSelected(new Set());
@@ -137,6 +166,19 @@ export function CriativoBatch() {
           <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Estilo Visual</label>
           <div className="grid grid-cols-2 gap-1.5">
             {VISUAL_STYLES.map((s) => (<button key={s.id} onClick={() => setStyle(s.id as VisualStyleId)} className={cn('px-2 py-2 rounded-lg border text-left transition-all', style === s.id ? 'border-brand bg-brand/10' : 'border-border hover:border-text-muted')}><span className="text-xs font-medium text-text-primary block">{s.label}</span><span className="text-[10px] text-text-muted">{s.desc}</span></button>))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Tema</label>
+          <div className="flex gap-1.5">
+            {CAROUSEL_THEMES.map(t => (
+              <button key={t.id} onClick={() => setThemeId(t.id)} className={cn('flex-1 py-2 rounded-lg border text-center text-xs font-medium transition-all', themeId === t.id ? 'border-brand text-brand bg-brand/10' : 'border-border text-text-muted hover:border-text-muted')}>
+                <div className="flex gap-0.5 justify-center mb-1">
+                  {t.previewSwatch.map((c, i) => <span key={i} className="w-3 h-3 rounded-full" style={{ backgroundColor: c }} />)}
+                </div>
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -174,21 +216,30 @@ export function CriativoBatch() {
         {variations.length > 0 && (
           <>
             <MassControls
-              totalCount={variations.length} selectedCount={selected.size}
+              totalCount={variations.length} selectedCount={selected.size} format={format}
               onSelectAll={() => setSelected(new Set(variations.map(v => v.id)))}
               onDeselectAll={() => setSelected(new Set())}
               onApplyToAll={applyToAll} onApplyCtaToAll={applyCtaToAll}
               onExportSelected={handleExportSelected} onDeleteSelected={deleteSelected}
+              onFormatChange={setFormat}
+              onSearchLibrary={() => searchLibraryForAll(variations, angle, updateVariationImage)}
+              onGenerateAllImages={() => generateAllImages(variations, updateVariationImage)}
               isExporting={exporting} exportProgress={exportProgress}
+              generatingAll={generatingAll} searchingLibrary={searchingLibrary}
+              imageGenProgress={imageGenProgress} libraryProgress={libraryProgress}
             />
             <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
               {variations.map((v) => (
-                <VariationCard key={v.id} variation={v} theme={theme}
-                  settings={getSettings(v.id)} isSelected={selected.has(v.id)}
+                <VariationCard key={v.id} variation={v} theme={theme} format={format}
+                  settings={getSettings(v.id)}
+                  isSelected={selected.has(v.id)}
+                  isGeneratingImage={generatingId === v.id}
                   onToggleSelect={() => toggleSelect(v.id)}
                   onUpdateVariation={(updates) => setVariations(prev => prev.map(x => x.id === v.id ? { ...x, ...updates } : x))}
                   onUpdateSettings={(updates) => updateSettings(v.id, updates)}
                   onRemove={() => { setVariations(prev => prev.filter(x => x.id !== v.id)); setSelected(prev => { const n = new Set(prev); n.delete(v.id); return n; }); }}
+                  onGenerateImage={(prompt) => generateForVariation(v.id, prompt, updateVariationImage)}
+                  onSearchLibrary={() => searchLibraryForOne(v, angle)}
                 />
               ))}
             </div>

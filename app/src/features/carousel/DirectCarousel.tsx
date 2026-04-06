@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Copy, RotateCcw } from 'lucide-react';
 import type { CarouselThemeId, SlideOutput, SlideSettings } from '@/types';
 import { DEFAULT_SLIDE_SETTINGS } from '@/types';
@@ -8,14 +8,17 @@ import { SlideCard } from './components/SlideCard';
 import { ThemeSelector } from './components/ThemeSelector';
 import { BatchExportButton } from './components/BatchExportButton';
 import { useCarouselGeneration } from '@/hooks/useCarouselGeneration';
+import { useImageGeneration } from '@/hooks/useImageGeneration';
 
 export function DirectCarousel() {
   const { carousel, setCarousel, isGenerating, error, generate, reset } = useCarouselGeneration();
   const [themeId, setThemeId] = useState<CarouselThemeId>('brand-orange');
   const [editingSlide, setEditingSlide] = useState<number | null>(null);
   const [settingsMap, setSettingsMap] = useState<Record<number, SlideSettings>>({});
+  const [slideImages, setSlideImages] = useState<Record<number, string>>({});
 
   const theme = CAROUSEL_THEMES.find((t) => t.id === themeId) || CAROUSEL_THEMES[0];
+  const { generatingId, generateForVariation, searchLibraryForOne } = useImageGeneration();
 
   const getSettings = (num: number): SlideSettings => settingsMap[num] || { ...DEFAULT_SLIDE_SETTINGS };
 
@@ -30,9 +33,14 @@ export function DirectCarousel() {
     setCarousel({ ...carousel, slides });
   };
 
+  const handleSlideImageUpdate = useCallback((slideNum: string, url: string) => {
+    setSlideImages(prev => ({ ...prev, [slideNum]: url }));
+  }, []);
+
   const handleReset = () => {
     reset();
     setSettingsMap({});
+    setSlideImages({});
     setEditingSlide(null);
   };
 
@@ -50,7 +58,7 @@ export function DirectCarousel() {
           <>
             <ThemeSelector value={themeId} onChange={setThemeId} />
             <div className="flex gap-2">
-              <BatchExportButton slides={carousel.slides} theme={theme} title={carousel.title} settingsMap={settingsMap} />
+              <BatchExportButton slides={carousel.slides} theme={theme} title={carousel.title} settingsMap={settingsMap} slideImages={slideImages} />
               <button onClick={handleReset} className="flex items-center gap-2 px-3 py-2.5 border border-border rounded-lg text-sm text-text-secondary hover:text-text-primary hover:border-text-muted transition-colors">
                 <RotateCcw className="w-4 h-4" />
                 Novo
@@ -101,11 +109,26 @@ export function DirectCarousel() {
                   <SlideCard
                     slide={slide}
                     theme={theme}
+                    imageUrl={slideImages[slide.number]}
                     settings={getSettings(slide.number)}
                     isEditing={editingSlide === slide.number}
+                    isGeneratingImage={generatingId === `slide-${slide.number}`}
                     onToggleEdit={() => setEditingSlide(editingSlide === slide.number ? null : slide.number)}
                     onUpdateSlide={(updated) => handleUpdateSlide(slide.number - 1, updated)}
                     onUpdateSettings={(updates) => updateSettings(slide.number, updates)}
+                    onUpdateImage={(url) => {
+                      if (url) setSlideImages(prev => ({ ...prev, [slide.number]: url }));
+                      else setSlideImages(prev => { const n = { ...prev }; delete n[slide.number]; return n; });
+                    }}
+                    onGenerateImage={(prompt) =>
+                      generateForVariation(`slide-${slide.number}`, prompt, handleSlideImageUpdate)
+                    }
+                    onSearchLibrary={() =>
+                      searchLibraryForOne(
+                        { id: `slide-${slide.number}`, headline: slide.headline, subtext: slide.subtext || '', cta: '', style: 'impact-direct', status: 'done', imagePrompt: slide.imagePrompt || undefined },
+                        carousel.angle,
+                      )
+                    }
                   />
                 </div>
               ))}

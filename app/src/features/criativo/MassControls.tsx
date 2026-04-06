@@ -1,36 +1,72 @@
 import { useState } from 'react';
-import { CheckSquare, Square, Download, Trash2 } from 'lucide-react';
-import type { SlideSettings, HighlightStyle } from '@/types';
+import {
+  CheckSquare, Square, Download, Trash2,
+  Wand2, BookImage, Loader2, ImageIcon,
+} from 'lucide-react';
+import type { SlideSettings, CreativeFormat } from '@/types';
 import { AdjSlider } from '@/features/carousel/components/AdjSlider';
-import { HIGHLIGHT_STYLES, SHAPE_STYLES, FONT_OPTIONS } from '@/features/carousel/constants';
+import { HIGHLIGHT_STYLES, SHAPE_STYLES, FONT_OPTIONS, CREATIVE_FORMATS } from '@/features/carousel/constants';
 import { cn } from '@/lib/utils';
+
+interface ImageGenProgress {
+  current: number;
+  total: number;
+  matches?: number;
+}
 
 interface MassControlsProps {
   totalCount: number;
   selectedCount: number;
+  format: CreativeFormat;
   onSelectAll: () => void;
   onDeselectAll: () => void;
   onApplyToAll: (updates: Partial<SlideSettings>) => void;
   onApplyCtaToAll: (cta: string) => void;
   onExportSelected: () => void;
   onDeleteSelected: () => void;
+  onFormatChange: (format: CreativeFormat) => void;
+  onSearchLibrary: () => void;
+  onGenerateAllImages: () => void;
   isExporting: boolean;
   exportProgress?: { current: number; total: number } | null;
+  generatingAll: boolean;
+  searchingLibrary: boolean;
+  imageGenProgress: ImageGenProgress | null;
+  libraryProgress: ImageGenProgress | null;
 }
 
 export function MassControls({
-  totalCount, selectedCount, onSelectAll, onDeselectAll,
+  totalCount, selectedCount, format, onSelectAll, onDeselectAll,
   onApplyToAll, onApplyCtaToAll, onExportSelected, onDeleteSelected,
-  isExporting, exportProgress,
+  onFormatChange, onSearchLibrary, onGenerateAllImages,
+  isExporting, exportProgress, generatingAll, searchingLibrary,
+  imageGenProgress, libraryProgress,
 }: MassControlsProps) {
   const [ctaText, setCtaText] = useState('');
   const allSelected = selectedCount === totalCount;
 
   return (
     <div className="border border-border rounded-xl bg-surface-elevated p-3 space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-[11px] font-bold text-text-primary uppercase tracking-wider">Controles em Massa</h3>
+      {/* Header + Format Selector */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <h3 className="text-[11px] font-bold text-text-primary uppercase tracking-wider">Controles em Massa</h3>
+          <div className="flex items-center gap-1">
+            <ImageIcon className="w-3 h-3 text-text-muted" />
+            <select
+              value={format.id}
+              onChange={(e) => {
+                const f = CREATIVE_FORMATS.find(x => x.id === e.target.value);
+                if (f) onFormatChange(f);
+              }}
+              className="bg-surface-hover border border-border rounded px-1.5 py-0.5 text-[10px] text-text-primary focus:border-brand outline-none"
+            >
+              {CREATIVE_FORMATS.map(f => (
+                <option key={f.id} value={f.id}>{f.label} ({f.ratio})</option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={allSelected ? onDeselectAll : onSelectAll}
@@ -43,6 +79,31 @@ export function MassControls({
         </div>
       </div>
 
+      {/* Image Operations */}
+      <div className="flex flex-wrap gap-2 p-2 bg-surface-hover/50 rounded-lg border border-border/50">
+        <button
+          onClick={onSearchLibrary}
+          disabled={searchingLibrary || generatingAll}
+          className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-lg text-[11px] font-semibold text-text-primary hover:border-brand hover:text-brand disabled:opacity-50 transition-all"
+        >
+          {searchingLibrary
+            ? <><Loader2 className="w-3 h-3 animate-spin" />{libraryProgress ? `${libraryProgress.current}/${libraryProgress.total} (${libraryProgress.matches || 0} matches)` : 'Buscando...'}</>
+            : <><BookImage className="w-3 h-3" />Buscar Biblioteca</>}
+        </button>
+        <button
+          onClick={onGenerateAllImages}
+          disabled={generatingAll || searchingLibrary}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand/10 border border-brand/30 rounded-lg text-[11px] font-semibold text-brand hover:bg-brand/20 disabled:opacity-50 transition-all"
+        >
+          {generatingAll
+            ? <><Loader2 className="w-3 h-3 animate-spin" />{imageGenProgress ? `${imageGenProgress.current}/${imageGenProgress.total}` : 'Gerando...'}</>
+            : <><Wand2 className="w-3 h-3" />Gerar Todas Imagens</>}
+        </button>
+        <span className="text-[9px] text-text-muted self-center">
+          Busque na biblioteca antes de gerar (economiza custos)
+        </span>
+      </div>
+
       {/* Sliders Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <AdjSlider label="Texto" value={1.0} min={0.5} max={2.0} step={0.1} onValueChange={(v) => onApplyToAll({ textScale: v })} />
@@ -53,7 +114,6 @@ export function MassControls({
 
       {/* CTA + Shape + Highlight + Font row */}
       <div className="flex flex-wrap gap-3 items-end">
-        {/* CTA em massa */}
         <div className="space-y-1">
           <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">CTA em massa</p>
           <div className="flex gap-1">
@@ -67,7 +127,6 @@ export function MassControls({
           </div>
         </div>
 
-        {/* Shape */}
         <div className="space-y-1">
           <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Shape</p>
           <div className="flex gap-0.5">
@@ -79,7 +138,6 @@ export function MassControls({
           </div>
         </div>
 
-        {/* Highlight */}
         <div className="space-y-1">
           <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Destaque</p>
           <div className="flex gap-0.5">
@@ -91,7 +149,6 @@ export function MassControls({
           </div>
         </div>
 
-        {/* Font */}
         <div className="space-y-1">
           <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Fonte</p>
           <div className="flex gap-0.5">
@@ -104,7 +161,7 @@ export function MassControls({
         </div>
       </div>
 
-      {/* Action buttons when selected */}
+      {/* Action buttons */}
       {selectedCount > 0 && (
         <div className="flex items-center gap-2 pt-1 border-t border-border/50">
           <button
