@@ -110,21 +110,23 @@ ${niches.length ? `NICHOS: ${niches.join(', ')}` : ''}
 ESTILO BASE: ${style}
 Retorne JSON com exatamente ${count} variações.`;
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SRK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY")!;
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-router`, {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_SRK}` },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openrouterKey}`,
+        'HTTP-Referer': 'https://dqef.app',
+        'X-Title': 'DQEF Studio',
+      },
       body: JSON.stringify({
-        task_type: "copy",
+        model: "anthropic/claude-sonnet-4",
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        options: { temperature: 0.9 },
-        user_id: userId,
-        function_name: "generate-creative-batch",
+        temperature: 0.9,
       }),
     });
 

@@ -107,13 +107,21 @@ Deno.serve(async (req) => {
       ? `Modo autônomo: analise o contexto da marca, escolha o melhor ângulo para conversão agora, gere EXATAMENTE 5 slides.`
       : `Gere carrossel com EXATAMENTE 5 slides:\n${context ? `CONTEXTO: ${context}` : ''}\n${angle ? `ÂNGULO: ${angle}` : ''}\n${persona ? `PERSONA: ${persona}` : ''}\n${channel ? `CANAL: ${channel}` : ''}\n${tone ? `TOM: ${tone}` : ''}\nRetorne o JSON completo.`;
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SRK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY")!;
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-router`, {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_SRK}` },
-      body: JSON.stringify({ task_type: "copy", messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], options: { temperature: 0.85 }, user_id: userId, function_name: "generate-carousel-visual" }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openrouterKey}`,
+        'HTTP-Referer': 'https://dqef.app',
+        'X-Title': 'DQEF Studio',
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-sonnet-4",
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+        temperature: 0.85,
+      }),
     });
 
     if (!response.ok) {

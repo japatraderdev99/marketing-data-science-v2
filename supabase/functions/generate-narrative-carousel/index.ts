@@ -85,13 +85,21 @@ Deno.serve(async (req) => {
       ? `Crie carrossel narrativo:\nTEMA: ${topic}\nÂNGULO: ${audience_angle || 'mais relevante'}\nTOM: ${tone}\nCANAL: ${channel}\nSLIDES: ${Math.min(Math.max(num_slides, 7), 10)}\n${researchData ? `DADOS:\n${researchData}` : 'Marque dados como ~estimativa.'}\nRetorne JSON.`
       : `Modo autônomo: escolha tema trending, crie ${num_slides} slides narrativos. Marque dados como ~estimativa.`;
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SRK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY")!;
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-router`, {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_SRK}` },
-      body: JSON.stringify({ task_type: "strategy", messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], options: { temperature: 0.9 }, user_id: userId, function_name: "generate-narrative-carousel" }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openrouterKey}`,
+        'HTTP-Referer': 'https://dqef.app',
+        'X-Title': 'DQEF Studio',
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-opus-4",
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+        temperature: 0.9,
+      }),
     });
 
     if (!response.ok) {
