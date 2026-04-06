@@ -23,21 +23,21 @@ interface TaskConfig {
 // Image generation via Nano Banana Pro (google/gemini-3-pro-image-preview) on OpenRouter
 const TASK_CONFIG: Record<string, TaskConfig> = {
   copy:       { model: "anthropic/claude-sonnet-4.6", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
-  strategy:   { model: "anthropic/claude-opus-4", provider: "openrouter", fallbackModel: "gemini-2.5-pro", fallbackProvider: "gemini" },
-  classify:   { model: "gemini-2.5-flash", provider: "gemini", fallbackModel: "anthropic/claude-sonnet-4", fallbackProvider: "openrouter" },
-  suggest:    { model: "gemini-2.5-flash", provider: "gemini", fallbackModel: "anthropic/claude-sonnet-4", fallbackProvider: "openrouter" },
+  strategy:   { model: "anthropic/claude-sonnet-4.6", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
+  classify:   { model: "gemini-2.5-flash", provider: "gemini", fallbackModel: "anthropic/claude-sonnet-4.6", fallbackProvider: "openrouter" },
+  suggest:    { model: "gemini-2.5-flash", provider: "gemini", fallbackModel: "anthropic/claude-sonnet-4.6", fallbackProvider: "openrouter" },
   image:      { model: "google/gemini-2.5-flash-image", provider: "openrouter", fallbackModel: "gemini-2.5-flash-image", fallbackProvider: "gemini" },
   image_hq:   { model: "google/gemini-3.1-flash-image-preview", provider: "openrouter", fallbackModel: "gemini-2.5-flash-image", fallbackProvider: "gemini" },
-  analyze:    { model: "anthropic/claude-sonnet-4", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
+  analyze:    { model: "anthropic/claude-sonnet-4.6", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
   tag_image:  { model: "gemini-2.5-flash", provider: "gemini", fallbackModel: "google/gemini-2.5-flash", fallbackProvider: "openrouter" },
-  video:      { model: "anthropic/claude-sonnet-4", provider: "openrouter", fallbackModel: "gemini-2.5-pro", fallbackProvider: "gemini" },
-  reference:  { model: "anthropic/claude-sonnet-4", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
-  auto:       { model: "openrouter/auto", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
+  video:      { model: "anthropic/claude-sonnet-4.6", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
+  reference:  { model: "anthropic/claude-sonnet-4.6", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
+  auto:       { model: "anthropic/claude-sonnet-4.6", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
 };
 
 const COST_MAP: Record<string, { input: number; output: number }> = {
+  "anthropic/claude-sonnet-4.6": { input: 3, output: 15 },
   "anthropic/claude-sonnet-4": { input: 3, output: 15 },
-  "anthropic/claude-opus-4": { input: 15, output: 75 },
   "openrouter/auto": { input: 2, output: 8 },
   "google/gemini-2.5-flash-image": { input: 0.15, output: 0.6 },
   "google/gemini-3.1-flash-image-preview": { input: 0.15, output: 0.6 },

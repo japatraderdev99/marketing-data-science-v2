@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
         'X-Title': 'DQEF Studio',
       },
       body: JSON.stringify({
-        model: "anthropic/claude-opus-4",
+        model: "anthropic/claude-sonnet-4.6",
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
         temperature: 0.9,
       }),
