@@ -22,7 +22,7 @@ interface TaskConfig {
 // OpenRouter primary (Claude models), Gemini API fallback
 // Image generation via Nano Banana Pro (google/gemini-3-pro-image-preview) on OpenRouter
 const TASK_CONFIG: Record<string, TaskConfig> = {
-  copy:       { model: "anthropic/claude-sonnet-4", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
+  copy:       { model: "anthropic/claude-sonnet-4.6", provider: "openrouter", fallbackModel: "gemini-2.5-flash", fallbackProvider: "gemini" },
   strategy:   { model: "anthropic/claude-opus-4", provider: "openrouter", fallbackModel: "gemini-2.5-pro", fallbackProvider: "gemini" },
   classify:   { model: "gemini-2.5-flash", provider: "gemini", fallbackModel: "anthropic/claude-sonnet-4", fallbackProvider: "openrouter" },
   suggest:    { model: "gemini-2.5-flash", provider: "gemini", fallbackModel: "anthropic/claude-sonnet-4", fallbackProvider: "openrouter" },
