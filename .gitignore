@@ -4,3 +4,12 @@
 node_modules/
 dist/
 memory/
+
+# Diretório Lovable — referência local apenas, não vai ao git
+marketing-planner-main NEW/
+
+
+# Firebase artifacts (deploy via Cloudflare, não Firebase)
+marketing-platform-v2-final/.firebase/
+marketing-platform-v2-final/.firebaserc
+marketing-platform-v2-final/firebase.json
