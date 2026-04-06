@@ -48,7 +48,7 @@ export type NarrativeSlideType =
   | 'proof' | 'evidence' | 'insight' | 'cta';
 
 export type NarrativeLayout = 'full-image' | 'split' | 'text-heavy' | 'quote' | 'cta';
-export type NarrativeThemeId = 'editorial-dark' | 'editorial-cream' | 'brand-bold';
+export type NarrativeThemeId = 'editorial-dark' | 'editorial-cream' | 'brand-bold' | 'dqef-editorial';
 
 export interface NarrativeSlide {
   number: number;

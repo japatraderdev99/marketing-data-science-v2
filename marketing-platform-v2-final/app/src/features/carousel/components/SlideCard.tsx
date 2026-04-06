@@ -1,5 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { toPng } from 'html-to-image';
+import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
 import { Download, Copy, Pencil, SlidersHorizontal, Check, ImagePlus, X } from 'lucide-react';
 import type { SlideOutput, CarouselTheme, SlideSettings } from '@/types';
 import { DEFAULT_SLIDE_SETTINGS } from '@/types';
@@ -27,24 +29,42 @@ export function SlideCard({
   slide, theme, imageUrl, settings, onUpdateSlide,
   onUpdateSettings, onUpdateImage, isEditing, onToggleEdit,
 }: SlideCardProps) {
-  const slideRef = useRef<HTMLDivElement>(null);
   const [panel, setPanel] = useState<ActivePanel>('none');
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const typeLabel = TYPE_LABELS[slide.type] || slide.type;
   const s = settings || DEFAULT_SLIDE_SETTINGS;
 
   const togglePanel = (p: ActivePanel) => setPanel(prev => prev === p ? 'none' : p);
 
+  // Off-screen render at full 1080×1350 — WYSIWYG export
   const handleExportPng = async () => {
-    if (!slideRef.current) return;
-    const dataUrl = await toPng(slideRef.current, {
-      width: 1080, height: 1350, pixelRatio: 1,
-      style: { transform: `scale(${1080 / 340})`, transformOrigin: 'top left' },
-    });
-    const link = document.createElement('a');
-    link.download = `slide-${slide.number}-${slide.type}.png`;
-    link.href = dataUrl;
-    link.click();
+    setExporting(true);
+    try {
+      const div = document.createElement('div');
+      div.style.cssText = 'position:fixed;top:-9999px;left:-9999px;pointer-events:none;';
+      document.body.appendChild(div);
+      const root = createRoot(div);
+      flushSync(() => root.render(
+        <SlidePreview
+          slide={slide} theme={theme}
+          imageUrl={imageUrl ?? undefined}
+          settings={s} width={1080} height={1350}
+          showWatermark isExport
+        />
+      ));
+      await document.fonts.ready;
+      await new Promise(r => setTimeout(r, 80));
+      const dataUrl = await toPng(div.firstElementChild as HTMLElement, { width: 1080, height: 1350, pixelRatio: 1 });
+      root.unmount();
+      document.body.removeChild(div);
+      Object.assign(document.createElement('a'), {
+        download: `slide-${slide.number}-${slide.type}.png`,
+        href: dataUrl,
+      }).click();
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleCopyText = () => {
@@ -55,10 +75,9 @@ export function SlideCard({
 
   return (
     <div className="space-y-1.5">
-      {/* Preview */}
+      {/* Preview — uses CSS scale internally, WYSIWYG */}
       <div className="relative">
-        <SlidePreview ref={slideRef} slide={slide} theme={theme} imageUrl={imageUrl} settings={s} />
-        {/* Slide badge */}
+        <SlidePreview slide={slide} theme={theme} imageUrl={imageUrl} settings={s} />
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
           <span className="text-[9px] font-bold uppercase tracking-wider text-brand bg-black/60 px-1.5 py-0.5 rounded">
             {typeLabel}
@@ -66,10 +85,13 @@ export function SlideCard({
           {imageUrl && (
             <span className="text-[9px] text-emerald-400 bg-black/60 px-1.5 py-0.5 rounded">● img</span>
           )}
+          {slide.needsMedia && !imageUrl && (
+            <span className="text-[9px] text-amber-400 bg-black/60 px-1.5 py-0.5 rounded">📷 sugerida</span>
+          )}
         </div>
       </div>
 
-      {/* Persistent action bar */}
+      {/* Action bar */}
       <div className="flex items-center gap-1 bg-surface-elevated rounded-lg border border-border p-1">
         <span className="text-[10px] text-text-muted pl-1 shrink-0">#{slide.number}</span>
         <div className="flex-1" />
@@ -87,8 +109,8 @@ export function SlideCard({
         </button>
 
         <button
-          onClick={() => { togglePanel('controls'); if (isEditing) onToggleEdit?.(); }}
-          title="Controles de edição"
+          onClick={() => togglePanel('controls')}
+          title="Ajustes visuais"
           className={cn(
             'flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors',
             panel === 'controls' ? 'bg-brand/20 text-brand' : 'text-text-muted hover:text-brand hover:bg-brand/10',
@@ -115,22 +137,22 @@ export function SlideCard({
         <button onClick={handleCopyText} title="Copiar texto" className="p-1 rounded text-text-muted hover:text-brand transition-colors">
           {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
         </button>
-        <button onClick={handleExportPng} title="Download PNG" className="p-1 rounded text-text-muted hover:text-brand transition-colors">
-          <Download className="w-3 h-3" />
+        <button onClick={handleExportPng} disabled={exporting} title="Download PNG 1080×1350" className="p-1 rounded text-text-muted hover:text-brand transition-colors disabled:opacity-40">
+          <Download className={cn('w-3 h-3', exporting && 'animate-bounce')} />
         </button>
       </div>
 
-      {/* Image controls panel */}
+      {/* Image panel */}
       {panel === 'image' && onUpdateImage && (
         <SlideImageControls
           slideNumber={slide.number}
-          imagePromptSuggestion={slide.visualDirection || ''}
+          imagePromptSuggestion={slide.imagePrompt || slide.visualDirection || ''}
           currentImageUrl={imageUrl}
           onImageChange={onUpdateImage}
         />
       )}
 
-      {/* Style controls panel */}
+      {/* Controls panel */}
       {panel === 'controls' && (
         <div className="p-2 bg-surface-elevated rounded-lg border border-border max-h-72 overflow-y-auto">
           <div className="flex items-center justify-between mb-2">
@@ -143,7 +165,7 @@ export function SlideCard({
         </div>
       )}
 
-      {/* Inline text editing */}
+      {/* Edit panel */}
       {(panel === 'edit' || isEditing) && onUpdateSlide && (
         <div className="space-y-1.5 p-2 bg-surface-elevated rounded-lg border border-border">
           <input

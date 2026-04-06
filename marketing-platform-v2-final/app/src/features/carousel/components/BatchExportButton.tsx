@@ -46,6 +46,7 @@ export function BatchExportButton({ slides, theme, title, settingsMap }: BatchEx
               isExport
             />,
           );
+          // width=1080 → previewScale=1 → inner canvas renders at full res, no transform
         });
 
         await document.fonts.ready;
