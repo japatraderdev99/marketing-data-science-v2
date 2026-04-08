@@ -3,6 +3,8 @@ import type { SlideOutput, CarouselTheme, SlideSettings } from '@/types';
 import { DEFAULT_SLIDE_SETTINGS } from '@/types';
 import { TYPE_LABELS } from '../constants';
 import { ShapeOverlay } from './ShapeOverlay';
+import dqefLogoWhite from '@/assets/dqef-logo-white.png';
+import dqefIconOrange from '@/assets/dqef-icon-orange.png';
 import { renderHighlightedText } from './WordHighlight';
 
 // ── SlidePreview ─────────────────────────────────────────────────────────────
@@ -143,15 +145,16 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
             )}
           </div>
 
-          {/* Watermark */}
+          {/* Brand mark — orange icon on light bg, white logo on dark/orange bg */}
           {showWatermark && (
-            <span style={{
-              position: 'absolute', bottom: 8, right: 10, zIndex: 10,
-              fontFamily: 'Montserrat', fontWeight: 700, textTransform: 'uppercase',
-              fontSize: 14, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)',
-            }}>
-              DQEF
-            </span>
+            <img
+              src={theme.headlineColor === '#1A1A1A' ? dqefIconOrange : dqefLogoWhite}
+              alt="DQEF"
+              style={{
+                position: 'absolute', bottom: 32, right: 36, zIndex: 10,
+                width: 56, height: 56, objectFit: 'contain', opacity: 0.65,
+              }}
+            />
           )}
         </div>
       </div>

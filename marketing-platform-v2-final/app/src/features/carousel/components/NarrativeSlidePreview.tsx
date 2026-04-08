@@ -147,7 +147,7 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
             {/* Footer */}
             <div style={{ position: 'absolute', bottom: 52, left: 88, right: 88, zIndex: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <DqMark size={48} bg={cardAccent} />
+              <DqMark size={48} isDark={isDark} />
               {!isExport && (
                 <span style={{ fontWeight: 600, letterSpacing: '0.12em', fontSize: 16, color: labelColor }}>
                   arrasta →
@@ -199,7 +199,7 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
               )}
             </div>
             <div style={{ position: 'absolute', bottom: 52, right: 52, zIndex: 20 }}>
-              <DqMark size={48} />
+              <DqMark size={48} isDark={isDark} />
             </div>
           </div>
         </div>
@@ -256,7 +256,7 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
               )}
             </div>
             <div style={{ position: 'absolute', bottom: 52, right: 52, zIndex: 20 }}>
-              <DqMark size={44} />
+              <DqMark size={44} isDark={isDark} />
             </div>
           </div>
         </div>
@@ -369,7 +369,7 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
 
           {/* DQ mark */}
           <div style={{ position: 'absolute', bottom: 52, right: 52, zIndex: 20 }}>
-            <DqMark size={isEditorial ? 52 : 44} />
+            <DqMark size={isEditorial ? 52 : 44} isDark={isDark || isPhotoFull} />
           </div>
 
           {/* Slide counter (top right, not in export) */}

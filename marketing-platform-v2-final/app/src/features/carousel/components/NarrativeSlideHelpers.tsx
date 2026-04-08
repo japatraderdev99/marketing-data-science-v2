@@ -1,4 +1,6 @@
 import type { NarrativeThemeId } from '@/types';
+import dqefIconOrange from '@/assets/dqef-icon-orange.png';
+import dqefLogoWhite from '@/assets/dqef-logo-white.png';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -54,21 +56,16 @@ export function Body({ text, accent, color, size }: { text: string; accent: stri
   );
 }
 
-// ── DQEF brand mark ───────────────────────────────────────────────────────────
+// ── DQEF brand mark — real asset ─────────────────────────────────────────────
+// isDark: use white logo (light bg on dark/orange)
+// !isDark: use orange icon (on cream/light)
 
-export function DqMark({ size = 56, bg = '#E8603C' }: { size?: number; bg?: string }) {
+export function DqMark({ size = 56, isDark = true }: { size?: number; isDark?: boolean }) {
   return (
-    <div style={{
-      width: size, height: size, background: bg,
-      borderRadius: Math.round(size * 0.22),
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexShrink: 0,
-    }}>
-      <span style={{
-        color: bg === '#FFFFFF' ? '#E8603C' : '#fff',
-        fontSize: Math.round(size * 0.36), fontWeight: 900,
-        fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.04em', lineHeight: 1,
-      }}>DQ</span>
-    </div>
+    <img
+      src={isDark ? dqefLogoWhite : dqefIconOrange}
+      alt="DQEF"
+      style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }}
+    />
   );
 }
