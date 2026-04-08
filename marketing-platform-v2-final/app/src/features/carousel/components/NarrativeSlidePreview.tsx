@@ -1,84 +1,19 @@
 import { forwardRef } from 'react';
 import type { NarrativeSlide, NarrativeThemeId } from '@/types';
 import { TYPE_LABELS } from '../constants';
+import { NARRATIVE_PALETTE, Accent, Body, DqMark } from './NarrativeSlideHelpers';
 
-// ── Theme palette ────────────────────────────────────────────────────────────
-
-const THEME: Record<NarrativeThemeId, { bg: string; text: string; accent: string; overlay: string }> = {
-  'editorial-dark':  { bg: '#0F0F0F', text: '#FFFFFF', accent: '#E8603C', overlay: 'rgba(0,0,0,0.72)' },
-  'editorial-cream': { bg: '#F5F0E8', text: '#1A1A1A', accent: '#E8603C', overlay: 'rgba(245,240,232,0.8)' },
-  'brand-bold':      { bg: '#E8603C', text: '#FFFFFF', accent: '#FFFFFF', overlay: 'rgba(232,96,60,0.72)' },
-  'dqef-editorial':  { bg: '#F7F2EB', text: '#111111', accent: '#E8603C', overlay: 'rgba(0,0,0,0.72)' },
-};
-
-// ── Settings ─────────────────────────────────────────────────────────────────
+// ── Settings ──────────────────────────────────────────────────────────────────
 
 export interface NarrativeSlideSettings {
-  textScale?: number;
+  headlineScale?: number;
+  bodyScale?: number;
   imageOpacity?: number;
   imageZoom?: number;
   imageOffsetY?: number;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function Accent({ text, color }: { text: string; color: string }) {
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  return (
-    <>
-      {parts.map((p, i) =>
-        p.startsWith('**') && p.endsWith('**')
-          ? <span key={i} style={{ color }}>{p.slice(2, -2)}</span>
-          : <span key={i}>{p}</span>
-      )}
-    </>
-  );
-}
-
-function BodyText({ text, accent, color, size }: { text: string; accent: string; color: string; size: number }) {
-  const lines = text.split('\n').filter(Boolean);
-  const baseStyle: React.CSSProperties = { fontSize: size, color, lineHeight: 1.65, margin: 0 };
-  if (lines.length > 1) {
-    return (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {lines.map((line, i) => (
-          <li key={i} style={{ display: 'flex', gap: 14, marginBottom: 12, ...baseStyle }}>
-            <span style={{ color: accent, flexShrink: 0, fontWeight: 700 }}>→</span>
-            <span>{line.replace(/^[-•→·]\s*/, '')}</span>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  return (
-    <p style={baseStyle}>
-      {parts.map((p, i) =>
-        p.startsWith('**') && p.endsWith('**')
-          ? <strong key={i} style={{ color: accent, fontWeight: 800 }}>{p.slice(2, -2)}</strong>
-          : <span key={i}>{p}</span>
-      )}
-    </p>
-  );
-}
-
-// Pure CSS logo mark — renders correctly inside html-to-image
-function DqefMark({ size = 28 }: { size?: number }) {
-  return (
-    <div style={{
-      width: size, height: size, background: '#E8603C',
-      borderRadius: Math.round(size * 0.22),
-      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    }}>
-      <span style={{
-        color: '#fff', fontSize: Math.round(size * 0.38), fontWeight: 900,
-        fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.04em', lineHeight: 1,
-      }}>DQ</span>
-    </div>
-  );
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 
 interface Props {
   slide: NarrativeSlide;
@@ -93,186 +28,358 @@ interface Props {
 
 export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
   ({ slide, theme, width = 340, height = 425, imageUrl, settings, totalSlides, isExport = false }, ref) => {
-    const previewScale = width / 1080;
-    const palette = THEME[theme] ?? THEME['editorial-dark'];
-    const accent = slide.accentColor || palette.accent;
-    const ts = settings?.textScale ?? 1.0;
+    const scale = width / 1080;
+    const pal = NARRATIVE_PALETTE[theme] ?? NARRATIVE_PALETTE['editorial-dark'];
+    const accent = slide.accentColor || pal.accent;
+    const hs = settings?.headlineScale ?? 1.0;
+    const bs = settings?.bodyScale ?? 1.0;
     const imgOpacity = settings?.imageOpacity ?? 1.0;
     const imgZoom = settings?.imageZoom ?? 1.0;
     const imgOffsetY = settings?.imageOffsetY ?? 0;
     const isEditorial = theme === 'dqef-editorial';
 
-    // Resolve bg / text color (editorial cycles automatically by slide number)
-    let bg = slide.bgColor || palette.bg;
-    let textColor = slide.textColor || palette.text;
+    // DQEF editorial: auto-cycle bg per slide number
+    let bg = slide.bgColor || pal.bg;
+    let textColor = slide.textColor || pal.text;
     if (isEditorial && !slide.bgColor) {
-      if (slide.number % 3 === 0)      { bg = '#E8603C'; textColor = '#FFFFFF'; }
-      else if (slide.number % 2 === 0) { bg = '#0F0F0F'; textColor = '#FFFFFF'; }
+      if      (slide.number % 3 === 0) { bg = '#E8603C'; textColor = '#FFFFFF'; }
+      else if (slide.number % 2 === 0) { bg = '#111111'; textColor = '#FFFFFF'; }
       else                             { bg = '#F7F2EB'; textColor = '#111111'; }
     }
+
     const isDark = textColor === '#FFFFFF';
-    const bodyColor = isDark ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.62)';
-    const isPhotoSlide = !!imageUrl && (slide.layout === 'full-image' || slide.layout === 'cta');
+    const bodyColor  = isDark ? 'rgba(255,255,255,0.74)' : 'rgba(0,0,0,0.62)';
+    const labelColor = isDark ? 'rgba(255,255,255,0.36)' : 'rgba(0,0,0,0.30)';
 
-    return (
-      <div ref={ref} style={{
-        width, height, overflow: 'hidden', position: 'relative', flexShrink: 0,
-        borderRadius: isExport ? 0 : 12,
-      }}>
-        {/* ── Inner design canvas — always 1080×1350, scaled to preview ── */}
-        <div className="slide-export" style={{
-          width: 1080, height: 1350, position: 'absolute', top: 0, left: 0,
-          transform: `scale(${previewScale})`, transformOrigin: 'top left',
-          backgroundColor: isPhotoSlide ? '#000' : bg,
-          fontFamily: 'Montserrat, sans-serif',
-        }}>
+    const len = slide.headline.length;
+    const hlSize = (len > 55 ? 58 : len > 30 ? 70 : 84) * hs;
+    const bdSize = 24 * bs;
 
-          {/* Background image */}
-          {imageUrl && (
-            <>
-              <img src={imageUrl} alt="" style={{
-                position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'cover', zIndex: 0,
-                opacity: imgOpacity,
-                transform: `scale(${imgZoom}) translateY(${imgOffsetY}px)`,
-                transformOrigin: 'center center',
-              }} />
-              {isPhotoSlide && (
-                <div style={{ position: 'absolute', inset: 0, zIndex: 1, background: `linear-gradient(to top, ${palette.overlay} 0%, rgba(0,0,0,0.1) 60%)` }} />
+    const hasPhoto = !!imageUrl;
+    const isPhotoFull = hasPhoto && (slide.layout === 'full-image' || slide.layout === 'cta');
+    const counter = totalSlides
+      ? `${String(slide.number).padStart(2, '0')}/${String(totalSlides).padStart(2, '0')}`
+      : null;
+
+    const imgBaseStyle: React.CSSProperties = {
+      position: 'absolute', inset: 0, width: '100%', height: '100%',
+      objectFit: 'cover', zIndex: 0,
+      opacity: imgOpacity,
+      transform: `scale(${imgZoom}) translateY(${imgOffsetY}px)`,
+      transformOrigin: 'center center',
+    };
+
+    // ── CLEAN-CARD (Brands Decoded Model 4) ───────────────────────────────────
+    if (slide.layout === 'clean-card') {
+      const cardAccent = bg === '#E8603C' ? '#FFFFFF' : '#E8603C';
+      return (
+        <div ref={ref} style={{ width, height, overflow: 'hidden', position: 'relative', flexShrink: 0, borderRadius: isExport ? 0 : 12 }}>
+          <div className="slide-export" style={{
+            width: 1080, height: 1350, position: 'absolute', top: 0, left: 0,
+            transform: `scale(${scale})`, transformOrigin: 'top left',
+            backgroundColor: bg, fontFamily: 'Montserrat, sans-serif',
+            display: 'flex', flexDirection: 'column',
+            padding: '108px 88px 100px',
+          }}>
+            {/* Subtle radial bg accent */}
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0,
+              background: isDark
+                ? `radial-gradient(ellipse at 80% 20%, rgba(232,96,60,0.07) 0%, transparent 60%)`
+                : `radial-gradient(ellipse at 80% 20%, rgba(232,96,60,0.05) 0%, transparent 60%)`,
+            }} />
+            {/* Slide counter top right */}
+            {counter && (
+              <span style={{ position: 'absolute', top: 56, right: 88, zIndex: 10,
+                fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.1em',
+                fontSize: 18, color: labelColor }}>
+                {counter}
+              </span>
+            )}
+            {/* Content */}
+            <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', flex: 1 }}>
+              {/* Accent line */}
+              <div style={{ width: 56, height: 4, background: cardAccent, borderRadius: 2, marginBottom: 28, flexShrink: 0 }} />
+              {/* Type label */}
+              {!isExport && (
+                <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em',
+                  textTransform: 'uppercase', color: labelColor, marginBottom: 24, flexShrink: 0 }}>
+                  ~{TYPE_LABELS[slide.type] || slide.type}
+                </span>
               )}
-              {!isPhotoSlide && (
-                <div style={{ position: 'absolute', inset: 0, zIndex: 1, backgroundColor: bg, opacity: 0.9 }} />
-              )}
-            </>
-          )}
-
-          {/* Split layout image panel */}
-          {imageUrl && slide.layout === 'split' && (
-            <div style={{ position: 'absolute', top: 0, height: '100%', width: '50%', zIndex: 0, [slide.imageSide === 'left' ? 'left' : 'right']: 0 }}>
-              <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: imgOpacity }} />
-            </div>
-          )}
-
-          {isEditorial ? (
-            // ─── DQEF EDITORIAL TEMPLATE ────────────────────────────────────
-            <>
-              {/* Top bar */}
-              <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 56, zIndex: 10,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0 40px',
-                borderBottom: isDark || isPhotoSlide ? 'none' : '1px solid rgba(0,0,0,0.07)',
+              {/* Headline — in accent color, very impactful */}
+              <h2 style={{
+                fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.0,
+                letterSpacing: '-0.03em',
+                fontSize: (len > 55 ? 64 : len > 30 ? 80 : 96) * hs,
+                color: cardAccent, margin: '0 0 40px', flexShrink: 0,
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <DqefMark size={28} />
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: isDark || isPhotoSlide ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.32)' }}>
-                    DQEF Studio
+                {slide.headline}
+              </h2>
+              {/* Body */}
+              {slide.bodyText && (
+                <Body text={slide.bodyText} accent={cardAccent} color={bodyColor} size={bdSize} />
+              )}
+              {/* Source */}
+              {slide.sourceLabel && (
+                <span style={{ marginTop: 24, fontSize: 14, fontStyle: 'italic', color: labelColor, flexShrink: 0 }}>
+                  ({slide.sourceLabel})
+                </span>
+              )}
+              {/* Image card — inset, bottom-aligned */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', marginTop: 48 }}>
+                <div style={{
+                  width: '100%', height: 480, borderRadius: 24, overflow: 'hidden',
+                  position: 'relative',
+                  background: isDark
+                    ? `linear-gradient(145deg, rgba(232,96,60,0.12) 0%, rgba(0,0,0,0.3) 100%)`
+                    : `linear-gradient(145deg, rgba(232,96,60,0.08) 0%, rgba(0,0,0,0.06) 100%)`,
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                }}>
+                  {hasPhoto && (
+                    <img src={imageUrl!} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
+                      objectFit: 'cover', opacity: imgOpacity,
+                      transform: `scale(${imgZoom}) translateY(${imgOffsetY}px)`,
+                      transformOrigin: 'center center' }} />
+                  )}
+                </div>
+              </div>
+            </div>
+            {/* Footer */}
+            <div style={{ position: 'absolute', bottom: 52, left: 88, right: 88, zIndex: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <DqMark size={48} bg={cardAccent} />
+              {!isExport && (
+                <span style={{ fontWeight: 600, letterSpacing: '0.12em', fontSize: 16, color: labelColor }}>
+                  arrasta →
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── QUOTE layout ──────────────────────────────────────────────────────────
+    if (slide.layout === 'quote') {
+      const quoteFontSize = (len > 55 ? 50 : len > 30 ? 60 : 70) * hs;
+      return (
+        <div ref={ref} style={{ width, height, overflow: 'hidden', position: 'relative', flexShrink: 0, borderRadius: isExport ? 0 : 12 }}>
+          <div className="slide-export" style={{
+            width: 1080, height: 1350, position: 'absolute', top: 0, left: 0,
+            transform: `scale(${scale})`, transformOrigin: 'top left',
+            backgroundColor: bg, fontFamily: 'Montserrat, sans-serif',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '120px 100px',
+          }}>
+            {hasPhoto && <img src={imageUrl!} alt="" style={{ ...imgBaseStyle, opacity: imgOpacity * 0.14 }} />}
+            <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', width: '100%' }}>
+              {/* Large stylistic marks */}
+              <div style={{ fontSize: 180, fontWeight: 900, lineHeight: 0.7, color: accent,
+                opacity: 0.12, letterSpacing: '-0.05em', marginBottom: 48 }}>
+                "
+              </div>
+              <h2 style={{
+                fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.015em',
+                fontSize: quoteFontSize, color: textColor, fontStyle: 'italic',
+                margin: '0 0 36px',
+                textShadow: hasPhoto ? '0 2px 24px rgba(0,0,0,0.6)' : 'none',
+              }}>
+                "{slide.headline}"
+              </h2>
+              {slide.bodyText && (
+                <Body text={slide.bodyText} accent={accent} color={bodyColor} size={bdSize} />
+              )}
+              {slide.sourceLabel && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 32 }}>
+                  <div style={{ width: 40, height: 2, background: accent, opacity: 0.5 }} />
+                  <span style={{ fontSize: 16, fontStyle: 'italic', color: accent, letterSpacing: '0.06em' }}>
+                    {slide.sourceLabel}
                   </span>
                 </div>
-                <span style={{ fontSize: 9, letterSpacing: '0.05em', color: isDark || isPhotoSlide ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.26)' }}>
-                  @deixaqueeufaco{totalSlides ? ` · ${slide.number}/${totalSlides}` : ''}
+              )}
+            </div>
+            <div style={{ position: 'absolute', bottom: 52, right: 52, zIndex: 20 }}>
+              <DqMark size={48} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── SPLIT layout ──────────────────────────────────────────────────────────
+    if (slide.layout === 'split') {
+      const imgSide = slide.imageSide === 'left' ? 'left' : 'right';
+      const splitHL = (len > 40 ? 54 : len > 20 ? 64 : 74) * hs;
+      return (
+        <div ref={ref} style={{ width, height, overflow: 'hidden', position: 'relative', flexShrink: 0, borderRadius: isExport ? 0 : 12 }}>
+          <div className="slide-export" style={{
+            width: 1080, height: 1350, position: 'absolute', top: 0, left: 0,
+            transform: `scale(${scale})`, transformOrigin: 'top left',
+            backgroundColor: bg, fontFamily: 'Montserrat, sans-serif',
+            display: 'flex', flexDirection: imgSide === 'left' ? 'row-reverse' : 'row',
+          }}>
+            {/* Text half */}
+            <div style={{ width: '50%', display: 'flex', flexDirection: 'column',
+              justifyContent: 'center', padding: '90px 72px', boxSizing: 'border-box' }}>
+              <div style={{ width: 48, height: 4, background: accent, borderRadius: 2, marginBottom: 24 }} />
+              {!isExport && (
+                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em',
+                  textTransform: 'uppercase', color: labelColor, marginBottom: 20 }}>
+                  ~{TYPE_LABELS[slide.type] || slide.type}
                 </span>
-              </div>
-
-              {/* Content area */}
-              <div style={{
-                position: 'absolute', top: 56, bottom: 60, left: 0, right: 0, zIndex: 10,
-                display: 'flex', flexDirection: 'column',
-                justifyContent: isPhotoSlide ? 'flex-end' : 'flex-start',
-                padding: '60px',
-                ...(slide.layout === 'split' && slide.imageSide === 'left' ? { paddingLeft: '55%' } : {}),
-                ...(slide.layout === 'split' && slide.imageSide === 'right' ? { paddingRight: '55%' } : {}),
-              }}>
-                <h2 style={{
-                  fontFamily: 'Montserrat, sans-serif', fontWeight: 900,
-                  textTransform: 'uppercase', lineHeight: 0.95, letterSpacing: '-0.03em',
-                  fontSize: (slide.headline.length > 55 ? 56 : 72) * ts,
-                  color: isPhotoSlide ? '#FFFFFF' : textColor,
-                  margin: '0 0 36px 0',
-                  textShadow: isPhotoSlide ? '0 2px 32px rgba(0,0,0,0.85)' : 'none',
-                }}>
-                  <Accent text={slide.headline} color={isPhotoSlide ? accent : accent} />
-                </h2>
-
-                {slide.bodyText && (
-                  <BodyText
-                    text={slide.bodyText} accent={accent}
-                    color={isPhotoSlide ? 'rgba(255,255,255,0.82)' : bodyColor}
-                    size={18 * ts}
-                  />
-                )}
-
-                {slide.sourceLabel && (
-                  <span style={{ display: 'inline-block', marginTop: 24, fontSize: 10, fontStyle: 'italic', color: isDark || isPhotoSlide ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.32)' }}>
-                    Fonte: {slide.sourceLabel}
-                  </span>
-                )}
-
-                {slide.type === 'cta' && (
-                  <p style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.04em', fontSize: 16 * ts, color: isPhotoSlide ? '#FFFFFF' : accent, margin: '28px 0 0' }}>
-                    pronto. resolvido.
-                  </p>
-                )}
-              </div>
-
-              {/* Bottom bar */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, zIndex: 10 }}>
-                <div style={{ position: 'absolute', top: 0, left: 40, right: 40, height: 4, background: '#E8603C', borderRadius: 2 }} />
-                <span style={{ position: 'absolute', bottom: 20, right: 40, fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: isDark || isPhotoSlide ? 'rgba(255,255,255,0.24)' : 'rgba(0,0,0,0.22)' }}>
-                  {slide.number}{totalSlides ? `/${totalSlides}` : ''}
+              )}
+              <h2 style={{ fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.05,
+                letterSpacing: '-0.025em', fontSize: splitHL,
+                color: textColor, margin: '0 0 28px' }}>
+                <Accent text={slide.headline} color={accent} />
+              </h2>
+              {slide.bodyText && (
+                <Body text={slide.bodyText} accent={accent} color={bodyColor} size={bdSize * 0.88} />
+              )}
+              {slide.sourceLabel && (
+                <span style={{ marginTop: 20, fontSize: 13, fontStyle: 'italic', color: labelColor }}>
+                  ({slide.sourceLabel})
                 </span>
-              </div>
-            </>
-          ) : (
-            // ─── STANDARD TEMPLATE ──────────────────────────────────────────
-            <>
-              <div style={{
-                position: 'absolute', top: 0, left: 0, zIndex: 10,
-                fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
-                padding: '4px 10px',
-                backgroundColor: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.6)',
-                borderBottomRightRadius: 6,
-              }}>
-                {TYPE_LABELS[slide.type] || slide.type.toUpperCase()}
-              </div>
+              )}
+            </div>
+            {/* Image half */}
+            <div style={{ width: '50%', position: 'relative', overflow: 'hidden' }}>
+              {hasPhoto ? (
+                <img src={imageUrl!} alt="" style={{ position: 'absolute', inset: 0,
+                  width: '100%', height: '100%', objectFit: 'cover',
+                  opacity: imgOpacity,
+                  transform: `scale(${imgZoom}) translateY(${imgOffsetY}px)`,
+                  transformOrigin: 'center center' }} />
+              ) : (
+                <div style={{ position: 'absolute', inset: 0,
+                  background: `linear-gradient(145deg, ${accent}18 0%, ${bg} 70%)` }} />
+              )}
+            </div>
+            <div style={{ position: 'absolute', bottom: 52, right: 52, zIndex: 20 }}>
+              <DqMark size={44} />
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-              <div style={{
-                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-                justifyContent: 'flex-end', padding: 28, zIndex: 10,
-                ...(slide.layout === 'split' && slide.imageSide === 'left' ? { paddingLeft: '55%' } : {}),
-                ...(slide.layout === 'split' && slide.imageSide === 'right' ? { paddingRight: '55%' } : {}),
-              }}>
-                <h2 style={{
-                  fontFamily: 'Montserrat, sans-serif', fontWeight: 900,
-                  textTransform: 'uppercase', lineHeight: 1.05, letterSpacing: '-0.02em',
-                  fontSize: (slide.layout === 'quote' ? 32 : 36) * ts,
-                  color: textColor, margin: '0 0 10px',
-                  textShadow: imageUrl ? '0 2px 24px rgba(0,0,0,0.7)' : 'none',
-                }}>
-                  <Accent text={slide.headline} color={accent} />
-                </h2>
+    // ── EDITORIAL + TEXT-HEAVY + FULL-IMAGE + CTA (DQEF editorial template) ──
+    return (
+      <div ref={ref} style={{ width, height, overflow: 'hidden', position: 'relative', flexShrink: 0, borderRadius: isExport ? 0 : 12 }}>
+        <div className="slide-export" style={{
+          width: 1080, height: 1350, position: 'absolute', top: 0, left: 0,
+          transform: `scale(${scale})`, transformOrigin: 'top left',
+          backgroundColor: isPhotoFull ? '#000' : bg,
+          fontFamily: 'Montserrat, sans-serif',
+        }}>
+          {/* Background image */}
+          {hasPhoto && (
+            <img src={imageUrl!} alt="" style={imgBaseStyle} />
+          )}
+          {/* Photo gradient overlay */}
+          {isPhotoFull && (
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 1,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.48) 48%, rgba(0,0,0,0.0) 78%)',
+            }} />
+          )}
+          {/* Text-heavy: subtle image bg at low opacity */}
+          {hasPhoto && slide.layout === 'text-heavy' && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 1, background: pal.overlay }} />
+          )}
 
-                {slide.bodyText && (
-                  <BodyText text={slide.bodyText} accent={accent} color={`${textColor}cc`} size={13 * ts} />
-                )}
+          {/* Content */}
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 10,
+            display: 'flex', flexDirection: 'column',
+            justifyContent: isPhotoFull ? 'flex-end' : (slide.layout === 'text-heavy' ? 'center' : 'flex-start'),
+            padding: isPhotoFull
+              ? '0 88px 120px'
+              : slide.layout === 'cta'
+                ? '0 88px'
+                : '108px 88px 100px',
+            alignItems: slide.layout === 'cta' ? 'center' : 'flex-start',
+            textAlign: slide.layout === 'cta' ? 'center' : 'left',
+          }}>
 
-                {slide.sourceLabel && (
-                  <span style={{ display: 'inline-block', fontStyle: 'italic', fontSize: 9, color: `${textColor}80`, marginTop: 6 }}>
-                    Fonte: {slide.sourceLabel}
-                  </span>
-                )}
+            {/* Accent line */}
+            <div style={{ width: 60, height: 4, background: isPhotoFull ? '#E8603C' : accent,
+              borderRadius: 2, marginBottom: 20, flexShrink: 0 }} />
 
-                {slide.type === 'cta' && (
-                  <p style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.05em', fontSize: 12 * ts, color: accent, margin: '14px 0 0' }}>
-                    pronto. resolvido.
-                  </p>
-                )}
-              </div>
-
-              <span style={{ position: 'absolute', bottom: 8, right: 10, zIndex: 10, fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 9, color: `${textColor}30` }}>
-                {slide.number}
+            {/* Type label (not in export) */}
+            {!isExport && !isPhotoFull && (
+              <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em',
+                textTransform: 'uppercase', color: labelColor, marginBottom: 24, flexShrink: 0 }}>
+                ~{TYPE_LABELS[slide.type] || slide.type}
               </span>
-            </>
+            )}
+
+            {/* Headline */}
+            <h2 style={{
+              fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.0, letterSpacing: '-0.03em',
+              fontSize: hlSize,
+              color: isPhotoFull ? '#FFFFFF' : textColor,
+              margin: '0 0 36px', flexShrink: 0,
+              textShadow: isPhotoFull ? '0 2px 32px rgba(0,0,0,0.85)' : 'none',
+            }}>
+              <Accent text={slide.headline} color={isPhotoFull ? '#E8603C' : accent} />
+            </h2>
+
+            {/* Body */}
+            {slide.bodyText && slide.layout !== 'cta' && (
+              slide.layout === 'text-heavy' ? (
+                <div style={{ borderLeft: `3px solid ${accent}50`, paddingLeft: 28 }}>
+                  <Body text={slide.bodyText} accent={accent}
+                    color={isPhotoFull ? 'rgba(255,255,255,0.82)' : bodyColor} size={bdSize} />
+                </div>
+              ) : (
+                <Body text={slide.bodyText} accent={accent}
+                  color={isPhotoFull ? 'rgba(255,255,255,0.82)' : bodyColor} size={bdSize} />
+              )
+            )}
+
+            {/* Source */}
+            {slide.sourceLabel && (
+              <span style={{ marginTop: 28, fontSize: 14, fontStyle: 'italic',
+                color: isPhotoFull ? 'rgba(255,255,255,0.45)' : labelColor }}>
+                ({slide.sourceLabel})
+              </span>
+            )}
+
+            {/* CTA pill */}
+            {slide.layout === 'cta' && (
+              <div style={{
+                marginTop: 44, display: 'inline-flex', alignItems: 'center', gap: 10,
+                padding: '22px 48px', borderRadius: 999,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+              }}>
+                <span style={{ fontSize: 28 * bs, fontWeight: 400,
+                  color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.40)' }}>pronto.</span>
+                <span style={{ fontSize: 28 * bs, fontWeight: 800, color: '#E8603C' }}>resolvido.</span>
+              </div>
+            )}
+            {/* CTA body text */}
+            {slide.layout === 'cta' && slide.bodyText && (
+              <p style={{ fontSize: bdSize, color: bodyColor, lineHeight: 1.5,
+                margin: '32px 0 0', maxWidth: 700, textAlign: 'center' }}>
+                {slide.bodyText}
+              </p>
+            )}
+          </div>
+
+          {/* DQ mark */}
+          <div style={{ position: 'absolute', bottom: 52, right: 52, zIndex: 20 }}>
+            <DqMark size={isEditorial ? 52 : 44} />
+          </div>
+
+          {/* Slide counter (top right, not in export) */}
+          {counter && !isExport && (
+            <span style={{
+              position: 'absolute', top: 52, right: 52, zIndex: 20,
+              fontWeight: 700, letterSpacing: '0.1em', fontSize: 16, color: labelColor,
+            }}>
+              {counter}
+            </span>
           )}
         </div>
       </div>

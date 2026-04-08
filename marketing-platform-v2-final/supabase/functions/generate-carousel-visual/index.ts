@@ -2,12 +2,41 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders } from '../_shared/cors.ts';
 import { getStrategyContext, getUserId } from '../_shared/strategy.ts';
 
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL = "anthropic/claude-sonnet-4-6";
+
 function extractJSON(raw: string): Record<string, unknown> {
-  let cleaned = raw.trim().replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
+  const cleaned = raw.trim().replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
   try { return JSON.parse(cleaned); } catch { /* continue */ }
   const match = cleaned.match(/\{[\s\S]*\}/);
   if (match) { try { return JSON.parse(match[0]); } catch { /* continue */ } }
   throw new Error('JSON não encontrado na resposta da IA');
+}
+
+async function callOpenRouter(
+  messages: Array<{ role: string; content: string }>,
+  options: Record<string, unknown> = {},
+): Promise<Record<string, unknown>> {
+  const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY não configurada");
+
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://dqef.app",
+      "X-Title": "DQEF Studio",
+    },
+    body: JSON.stringify({ model: MODEL, messages, ...options }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`OpenRouter error ${res.status}: ${err}`);
+  }
+
+  return res.json();
 }
 
 const VISUAL_RULES = `
@@ -69,26 +98,32 @@ Deno.serve(async (req) => {
       ? `Modo autônomo: analise o contexto da marca, escolha o melhor ângulo para conversão agora, gere EXATAMENTE 5 slides.`
       : `Gere carrossel com EXATAMENTE 5 slides:\n${context ? `CONTEXTO: ${context}` : ''}\n${angle ? `ÂNGULO: ${angle}` : ''}\n${persona ? `PERSONA: ${persona}` : ''}\n${channel ? `CANAL: ${channel}` : ''}\n${tone ? `TOM: ${tone}` : ''}\nRetorne o JSON completo.`;
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const INTERNAL_SECRET = Deno.env.get("INTERNAL_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const data = await callOpenRouter(
+      [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+      { temperature: 0.85, max_tokens: 4096 },
+    );
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-router`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${INTERNAL_SECRET}` },
-      body: JSON.stringify({ task_type: "copy", messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], options: { temperature: 0.85 }, user_id: userId, function_name: "generate-carousel-visual" }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: "Erro na IA" }));
-      return new Response(JSON.stringify(err), { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    const aiData = await response.json();
-    const rawContent = aiData.choices?.[0]?.message?.content ?? '';
+    const rawContent = (data as { choices?: Array<{ message?: { content?: string } }> }).choices?.[0]?.message?.content ?? '';
     const carousel = extractJSON(rawContent);
 
-    return new Response(JSON.stringify({ carousel, autonomous: isAutonomous }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Fire-and-forget usage log
+    if (userId) {
+      const { createClient } = await import('jsr:@supabase/supabase-js@2');
+      const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      sb.from('ai_usage_log').insert({
+        user_id: userId, function_name: 'generate-carousel-visual', task_type: 'copy',
+        model_used: MODEL, provider: 'openrouter', success: true,
+      }).then(() => {});
+    }
+
+    return new Response(JSON.stringify({ carousel, autonomous: isAutonomous }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Erro interno' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    console.error('generate-carousel-visual error:', error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Erro interno' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   }
 });

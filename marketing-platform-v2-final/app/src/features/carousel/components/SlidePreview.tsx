@@ -28,10 +28,10 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
     const typeLabel = TYPE_LABELS[slide.type] || slide.type.toUpperCase();
 
     // Design-size font values (at 1080px canvas — no * scale needed)
-    const baseFontSize = slide.layout === 'number-dominant' ? 72 : 38;
+    const baseFontSize = slide.layout === 'number-dominant' ? 144 : 72;
     const headlineSize = baseFontSize * s.textScale;
-    const subtextSize = 14 * s.textScale;
-    const ctaSize = 11 * s.ctaScale;
+    const subtextSize = 30 * s.textScale;
+    const ctaSize = 24 * s.ctaScale;
 
     const hasCustomHighlight = s.highlightWords && s.highlightStyle !== 'none';
 
@@ -96,10 +96,10 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
           {/* Slide type badge */}
           <div style={{
             position: 'absolute', top: 0, left: 0, zIndex: 10,
-            fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-            padding: '4px 10px',
+            fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '8px 18px',
             backgroundColor: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.6)',
-            borderBottomRightRadius: 6,
+            borderBottomRightRadius: 8,
           }}>
             {typeLabel}
           </div>
@@ -118,7 +118,7 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
               fontFamily: s.fontFamily || 'Montserrat', fontWeight: 900,
               textTransform: 'uppercase', lineHeight: 1.05, letterSpacing: '-0.02em',
               fontSize: headlineSize, color: theme.headlineColor,
-              margin: '0 0 8px',
+              margin: '0 0 24px',
             }}>
               {renderHeadline()}
             </h2>
@@ -136,7 +136,7 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
             {slide.type === 'cta' && (
               <p style={{
                 fontFamily: s.fontFamily || 'Montserrat', fontWeight: 700, letterSpacing: '0.05em',
-                fontSize: ctaSize, color: theme.sloganBright, margin: '12px 0 0',
+                fontSize: ctaSize, color: theme.sloganBright, margin: '32px 0 0',
               }}>
                 pronto. resolvido.
               </p>
@@ -148,7 +148,7 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
             <span style={{
               position: 'absolute', bottom: 8, right: 10, zIndex: 10,
               fontFamily: 'Montserrat', fontWeight: 700, textTransform: 'uppercase',
-              fontSize: 8, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)',
+              fontSize: 14, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)',
             }}>
               DQEF
             </span>

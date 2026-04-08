@@ -38,6 +38,25 @@ export async function callAI(
   return data as AIResponse;
 }
 
+async function extractFunctionError(error: unknown): Promise<string> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ctx = (error as any)?.context;
+    if (ctx) {
+      // FunctionsHttpError: context is a Response object
+      if (typeof ctx.json === 'function') {
+        const body = await ctx.json();
+        return body?.error || body?.message || JSON.stringify(body);
+      }
+      // Sometimes context is already the parsed body
+      if (typeof ctx === 'object' && (ctx.error || ctx.message)) {
+        return ctx.error || ctx.message;
+      }
+    }
+  } catch { /* fall through */ }
+  return (error as Error)?.message || 'Erro desconhecido';
+}
+
 export async function generateCarouselVisual(params: {
   context?: string;
   angle?: string;
@@ -49,7 +68,7 @@ export async function generateCarouselVisual(params: {
     body: params,
   });
 
-  if (error) throw new Error(error.message || 'Erro ao gerar carrossel');
+  if (error) { console.error('[generate-carousel-visual]', error); throw new Error(await extractFunctionError(error)); }
   if (data?.error) throw new Error(data.error);
   return data;
 }
@@ -67,7 +86,7 @@ export async function generateNarrativeCarousel(params: {
     body: params,
   });
 
-  if (error) throw new Error(error.message || 'Erro ao gerar carrossel narrativo');
+  if (error) { console.error('[generate-narrative-carousel]', error); throw new Error(await extractFunctionError(error)); }
   if (data?.error) throw new Error(data.error);
   return data;
 }
@@ -84,7 +103,7 @@ export async function generateCreativeBatch(params: {
     body: params,
   });
 
-  if (error) throw new Error(error.message || 'Erro ao gerar variações');
+  if (error) { console.error('[generate-creative-batch]', error); throw new Error(await extractFunctionError(error)); }
   if (data?.error) throw new Error(data.error);
   return data;
 }
@@ -98,7 +117,7 @@ export async function generateSlideImage(params: {
     body: params,
   });
 
-  if (error) throw new Error(error.message || 'Erro ao gerar imagem');
+  if (error) { console.error('[generate-slide-image]', error); throw new Error(await extractFunctionError(error)); }
   if (data?.error) throw new Error(data.error);
   return data;
 }

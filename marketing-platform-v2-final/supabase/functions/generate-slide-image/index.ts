@@ -6,9 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const IMAGE_MODEL = "google/gemini-3.1-flash-image-preview"; // via OpenRouter
-const IMAGEN_URL = "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict"; // fallback
+// Primary: Gemini 3.1 Flash Image Preview via OpenRouter chat/completions
+// Note: modalities:["image"] is REQUIRED — without it the model returns text, not image data
+// The image is returned in message.images[0].image_url.url (NOT in message.content)
+const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+const IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
+
+// Fallback: Gemini image generation via Google AI Studio
+const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent";
 
 async function getUserId(req: Request): Promise<string | null> {
   try {
@@ -47,26 +52,8 @@ async function translatePrompt(imagePrompt: string, userId: string | null): Prom
   } catch { return imagePrompt; }
 }
 
-function extractImageFromContent(content: unknown): string | null {
-  if (typeof content === "string") {
-    const mdMatch = content.match(/!\[.*?\]\((https?:\/\/[^\)]+)\)/);
-    if (mdMatch) return mdMatch[1];
-    const urlMatch = content.match(/https?:\/\/\S+\.(png|jpg|jpeg|webp)/i);
-    if (urlMatch) return urlMatch[0];
-    return null;
-  }
-  if (Array.isArray(content)) {
-    for (const part of content) {
-      if (part.type === "image_url" && part.image_url?.url) return part.image_url.url;
-      if (part.type === "image" && part.source?.data) return `data:image/png;base64,${part.source.data}`;
-      if (part.inline_data?.data) return `data:image/png;base64,${part.inline_data.data}`;
-    }
-  }
-  return null;
-}
-
 async function generateWithOpenRouter(prompt: string, apiKey: string): Promise<string | null> {
-  const res = await fetch(OPENROUTER_URL, {
+  const res = await fetch(OPENROUTER_CHAT_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -76,38 +63,80 @@ async function generateWithOpenRouter(prompt: string, apiKey: string): Promise<s
     },
     body: JSON.stringify({
       model: IMAGE_MODEL,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
+      stream: false,
+      modalities: ["image"],
+      messages: [{ role: "user", content: prompt }],
     }),
   });
 
   if (!res.ok) {
     const err = await res.text().catch(() => "");
-    console.error("OpenRouter image error:", res.status, err);
+    console.error("OpenRouter error:", res.status, err.slice(0, 300));
     return null;
   }
 
-  const data = await res.json();
-  return extractImageFromContent(data.choices?.[0]?.message?.content);
+  let data: Record<string, unknown>;
+  try {
+    data = await res.json();
+  } catch (e) {
+    console.error("OpenRouter JSON parse error:", e);
+    return null;
+  }
+
+  const choice = (data.choices as Record<string, unknown>[])?.[0];
+  const message = choice?.message as Record<string, unknown> | undefined;
+
+  // OpenRouter returns Gemini image in message.images[0].image_url.url
+  const images = message?.images as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(images) && images.length > 0) {
+    const img = images[0];
+    const imageUrlObj = img.image_url as { url?: string } | undefined;
+    if (imageUrlObj?.url) return imageUrlObj.url;
+    if (typeof img.url === "string") return img.url;
+    if (typeof img.b64_json === "string") return `data:image/png;base64,${img.b64_json}`;
+  }
+
+  // Fallback: check content field (older response format)
+  const content = message?.content;
+  if (typeof content === "string" && content.startsWith("data:image/")) return content;
+  if (Array.isArray(content)) {
+    for (const part of content as Array<Record<string, unknown>>) {
+      const imgUrl = (part.image_url as { url?: string } | undefined)?.url;
+      if (imgUrl) return imgUrl;
+      const inlineData = part.inlineData as { data?: string; mimeType?: string } | undefined;
+      if (inlineData?.data) return `data:${inlineData.mimeType || "image/jpeg"};base64,${inlineData.data}`;
+    }
+  }
+
+  console.error("OpenRouter: no image in response, finish_reason:", choice?.finish_reason);
+  return null;
 }
 
-async function generateWithImagen3(prompt: string, apiKey: string): Promise<string | null> {
-  const res = await fetch(`${IMAGEN_URL}?key=${apiKey}`, {
+// Fallback: Gemini image generation via Google AI Studio
+async function generateWithGemini(prompt: string, apiKey: string): Promise<string | null> {
+  const res = await fetch(`${GEMINI_IMAGE_URL}?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: { sampleCount: 1, aspectRatio: "4:5", safetyFilterLevel: "BLOCK_ONLY_HIGH", personGeneration: "ALLOW_ADULT" },
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
     }),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    console.error("Gemini error:", res.status, err.slice(0, 300));
+    return null;
+  }
   const data = await res.json();
-  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-  return b64 ? `data:image/png;base64,${b64}` : null;
+  const parts = data.candidates?.[0]?.content?.parts as Array<{ inlineData?: { data: string; mimeType: string } }> | undefined;
+  if (!parts) { console.error("Gemini: no candidates"); return null; }
+  for (const part of parts) {
+    if (part.inlineData?.data) {
+      return `data:${part.inlineData.mimeType || "image/jpeg"};base64,${part.inlineData.data}`;
+    }
+  }
+  console.error("Gemini: no inlineData in parts");
+  return null;
 }
 
 serve(async (req) => {
@@ -132,7 +161,6 @@ serve(async (req) => {
 
     const styledPrompt = `${finalPrompt}. Documentary photography, authentic Brazilian work environment, natural lighting, candid, photorealistic, high quality`;
 
-    // Primary: Gemini 3.1 Flash Image via OpenRouter
     let imageDataUrl: string | null = null;
     let modelUsed = IMAGE_MODEL;
 
@@ -140,23 +168,22 @@ serve(async (req) => {
       imageDataUrl = await generateWithOpenRouter(styledPrompt, openrouterKey);
     }
 
-    // Fallback: Imagen 3 via Google AI
     if (!imageDataUrl && geminiKey) {
-      modelUsed = "imagen-3.0-generate-002";
-      imageDataUrl = await generateWithImagen3(styledPrompt, geminiKey);
+      modelUsed = "gemini-2.0-flash-exp-image-generation";
+      imageDataUrl = await generateWithGemini(styledPrompt, geminiKey);
     }
 
     if (userId) {
       const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       supabase.from("ai_usage_log").insert({
         user_id: userId, function_name: "generate-slide-image", task_type: "image",
-        model_used: modelUsed, provider: modelUsed.includes("imagen") ? "google" : "openrouter",
+        model_used: modelUsed, provider: modelUsed.includes("gemini") ? "google" : "openrouter",
         tokens_input: 0, tokens_output: 0, cost_estimate: 0, latency_ms: 0, success: !!imageDataUrl,
       }).then(({ error }) => { if (error) console.error("Log error:", error); });
     }
 
     if (!imageDataUrl) {
-      return new Response(JSON.stringify({ error: "Não foi possível gerar a imagem. Verifique os logs." }), {
+      return new Response(JSON.stringify({ error: "Não foi possível gerar a imagem. Verifique os logs da edge function." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -166,7 +193,8 @@ serve(async (req) => {
       imageDataUrl: isBase64 ? imageDataUrl : null,
       imageUrl: !isBase64 ? imageDataUrl : null,
       imageBase64: isBase64 ? imageDataUrl.replace(/^data:image\/\w+;base64,/, "") : null,
-      model: modelUsed, translated: translateFirst,
+      model: modelUsed,
+      translated: translateFirst,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (error) {

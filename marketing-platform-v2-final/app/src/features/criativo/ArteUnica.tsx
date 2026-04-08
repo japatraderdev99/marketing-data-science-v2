@@ -1,4 +1,6 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
+import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
 import { Sparkles, Loader2, RotateCcw, Download, Copy, Check, ImagePlus, ImageOff } from 'lucide-react';
 import { MediaPickerModal } from './components/MediaPickerModal';
 import { toPng } from 'html-to-image';
@@ -39,7 +41,6 @@ export function ArteUnica() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const saveDraft = useSaveDraft();
   const [showMediaPicker, setShowMediaPicker] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   const theme = CAROUSEL_THEMES.find(t => t.id === themeId) || CAROUSEL_THEMES[0];
 
@@ -75,19 +76,33 @@ export function ArteUnica() {
     setError(null);
   };
 
+  // Pixel-perfect export via off-screen 1080px render
   const handleDownload = useCallback(async () => {
-    if (!previewRef.current || !slide) return;
+    if (!slide) return;
     setIsDownloading(true);
     try {
+      const div = document.createElement('div');
+      div.style.cssText = 'position:fixed;top:-9999px;left:-9999px;pointer-events:none;';
+      document.body.appendChild(div);
+      const root = createRoot(div);
+      flushSync(() => root.render(
+        <SlidePreview slide={slide} theme={theme} width={1080} height={1350}
+          settings={settings} imageUrl={imageUrl} isExport />
+      ));
       await document.fonts.ready;
-      const dataUrl = await toPng(previewRef.current, { width: 1080, height: 1350, pixelRatio: 1 });
+      await new Promise(r => setTimeout(r, 100));
+      const dataUrl = await toPng(div.firstElementChild as HTMLElement, {
+        width: 1080, height: 1350, pixelRatio: 1,
+      });
+      root.unmount();
+      document.body.removeChild(div);
       saveAs(dataUrl, `arte-unica-${Date.now()}.png`);
     } catch (err) {
       console.error('Erro ao exportar:', err);
     } finally {
       setIsDownloading(false);
     }
-  }, [slide]);
+  }, [slide, theme, settings, imageUrl]);
 
   const handleCopy = () => {
     if (!slide) return;
@@ -260,7 +275,7 @@ export function ArteUnica() {
             <div className="flex gap-5">
               {/* Preview */}
               <div className="shrink-0">
-                <SlidePreview ref={previewRef} slide={slide} theme={theme} settings={settings} imageUrl={imageUrl} width={400} height={500} />
+                <SlidePreview slide={slide} theme={theme} settings={settings} imageUrl={imageUrl} width={400} height={500} />
               </div>
 
               {/* Controls Panel */}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, Loader2, Copy, RotateCcw, Download, SlidersHorizontal, ImagePlus } from 'lucide-react';
+import { Sparkles, Loader2, Copy, RotateCcw, Download } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -7,95 +7,70 @@ import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import type { NarrativeThemeId, NarrativeSlide } from '@/types';
 import { NarrativeSlidePreview } from './components/NarrativeSlidePreview';
-import { SlideImageControls } from './components/SlideImageControls';
-import { AdjSlider } from './components/AdjSlider';
+import type { NarrativeSlideSettings } from './components/NarrativeSlidePreview';
+import { NarrativeSlideCard } from './components/NarrativeSlideCard';
 import { StrategyContext } from '@/components/shared/StrategyContext';
 import { useNarrativeGeneration } from '@/hooks/useNarrativeGeneration';
 import { useSaveDraft } from '@/features/criativo/hooks/useCreativeDrafts';
 import { cn } from '@/lib/utils';
 
 const THEMES: { id: NarrativeThemeId; label: string; swatch: string; desc: string }[] = [
-  { id: 'dqef-editorial', label: 'DQEF', swatch: '#F7F2EB', desc: 'Editorial alternado' },
-  { id: 'editorial-dark', label: 'Dark', swatch: '#0F0F0F', desc: 'Escuro premium' },
-  { id: 'editorial-cream', label: 'Cream', swatch: '#F5F0E8', desc: 'Editorial claro' },
-  { id: 'brand-bold', label: 'Bold', swatch: '#E8603C', desc: 'Laranja de impacto' },
+  { id: 'dqef-editorial', label: 'DQEF',  swatch: '#F7F2EB', desc: 'Editorial alternado' },
+  { id: 'editorial-dark', label: 'Dark',  swatch: '#0F0F0F', desc: 'Escuro premium' },
+  { id: 'editorial-cream',label: 'Cream', swatch: '#F5F0E8', desc: 'Editorial claro' },
+  { id: 'brand-bold',     label: 'Bold',  swatch: '#E8603C', desc: 'Laranja impacto' },
 ];
 
-interface SlideSettings { textScale: number; imageOpacity: number; imageZoom: number }
-const DEFAULT_SS: SlideSettings = { textScale: 1.0, imageOpacity: 1.0, imageZoom: 1.0 };
+const DEFAULT_SS: NarrativeSlideSettings = {
+  headlineScale: 1.0, bodyScale: 1.0,
+  imageOpacity: 1.0, imageZoom: 1.0, imageOffsetY: 0,
+};
 
 export function NarrativeCarousel() {
   const { carousel, setCarousel, isGenerating, error, generate, reset } = useNarrativeGeneration();
   const saveDraft = useSaveDraft();
   const savedTitleRef = useRef<string | null>(null);
-  const [topic, setTopic] = useState('');
+
+  const [topic, setTopic]               = useState('');
   const [audienceAngle, setAudienceAngle] = useState('');
-  const [numSlides, setNumSlides] = useState(10);
-  const [themeOverride, setThemeOverride] = useState<NarrativeThemeId | ''>('dqef-editorial');
-  const [editingSlide, setEditingSlide] = useState<number | null>(null);
-  const [controlsSlide, setControlsSlide] = useState<number | null>(null);
-  const [imageControlsSlide, setImageControlsSlide] = useState<number | null>(null);
-  const [settingsMap, setSettingsMap] = useState<Record<number, SlideSettings>>({});
-  const [imageMap, setImageMap] = useState<Record<number, string | null>>({});
-  const [exporting, setExporting] = useState(false);
-  const [exportingSlide, setExportingSlide] = useState<number | null>(null);
+  const [numSlides, setNumSlides]       = useState(10);
+  const [themeOverride, setThemeOverride] = useState<NarrativeThemeId>('dqef-editorial');
+  const [settingsMap, setSettingsMap]   = useState<Record<number, NarrativeSlideSettings>>({});
+  const [imageMap, setImageMap]         = useState<Record<number, string | null>>({});
+  const [exporting, setExporting]       = useState(false);
 
   const activeTheme = (themeOverride || carousel?.theme || 'dqef-editorial') as NarrativeThemeId;
   const totalSlides = carousel?.slides.length ?? 0;
 
+  // Auto-save draft when title changes
   useEffect(() => {
     if (!carousel || savedTitleRef.current === carousel.title) return;
     savedTitleRef.current = carousel.title;
-    saveDraft.mutate({ type: 'carousel_narrative', title: carousel.title, data: carousel as unknown as Record<string, unknown> });
+    saveDraft.mutate({
+      type: 'carousel_narrative', title: carousel.title,
+      data: carousel as unknown as Record<string, unknown>,
+    });
   }, [carousel?.title]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getSettings = (n: number) => settingsMap[n] || { ...DEFAULT_SS };
-  const updateSettings = (n: number, updates: Partial<SlideSettings>) =>
+  const getSettings = (n: number): NarrativeSlideSettings => settingsMap[n] || { ...DEFAULT_SS };
+
+  const updateSettings = (n: number, updates: Partial<NarrativeSlideSettings>) =>
     setSettingsMap(prev => ({ ...prev, [n]: { ...getSettings(n), ...updates } }));
+
   const updateImage = (n: number, url: string | null) =>
     setImageMap(prev => ({ ...prev, [n]: url }));
+
+  const updateSlide = (index: number, updates: Partial<NarrativeSlide>) => {
+    if (!carousel) return;
+    const slides = [...carousel.slides];
+    slides[index] = { ...slides[index], ...updates };
+    setCarousel({ ...carousel, slides });
+  };
 
   const handleGenerate = () => {
     generate({ topic, audience_angle: audienceAngle, tone: 'editorial', channel: 'Instagram Feed', num_slides: numSlides });
     setSettingsMap({});
     setImageMap({});
-  };
-
-  const handleUpdateSlide = (index: number, field: keyof NarrativeSlide, value: string) => {
-    if (!carousel) return;
-    const slides = [...carousel.slides];
-    slides[index] = { ...slides[index], [field]: value };
-    setCarousel({ ...carousel, slides });
-  };
-
-  const handleExportSlide = async (slide: NarrativeSlide) => {
-    setExportingSlide(slide.number);
-    try {
-      const div = document.createElement('div');
-      div.style.cssText = 'position:fixed;top:-9999px;left:-9999px;pointer-events:none;';
-      document.body.appendChild(div);
-      const root = createRoot(div);
-      flushSync(() => root.render(
-        <NarrativeSlidePreview
-          slide={slide} theme={activeTheme}
-          imageUrl={imageMap[slide.number]}
-          settings={getSettings(slide.number)}
-          totalSlides={totalSlides}
-          width={1080} height={1350} isExport
-        />
-      ));
-      await document.fonts.ready;
-      await new Promise(r => setTimeout(r, 80));
-      const dataUrl = await toPng(div.firstElementChild as HTMLElement, { width: 1080, height: 1350, pixelRatio: 1 });
-      root.unmount();
-      document.body.removeChild(div);
-      Object.assign(document.createElement('a'), {
-        download: `dqef-slide-${slide.number}-${slide.type}.png`,
-        href: dataUrl,
-      }).click();
-    } finally {
-      setExportingSlide(null);
-    }
   };
 
   const handleExportZip = async () => {
@@ -113,16 +88,16 @@ export function NarrativeCarousel() {
         flushSync(() => root.render(
           <NarrativeSlidePreview
             slide={slide} theme={activeTheme}
-            imageUrl={imageMap[slide.number]}
-            settings={getSettings(slide.number)}
-            totalSlides={totalSlides}
-            width={1080} height={1350} isExport
+            imageUrl={imageMap[slide.number]} settings={getSettings(slide.number)}
+            totalSlides={totalSlides} width={1080} height={1350} isExport
           />
         ));
         await document.fonts.ready;
-        await new Promise(r => setTimeout(r, 80));
-        const dataUrl = await toPng(el.firstElementChild as HTMLElement, { width: 1080, height: 1350, pixelRatio: 1 });
-        zip.file(`${slide.number}-${slide.type}.png`, dataUrl.split(',')[1], { base64: true });
+        await new Promise(r => setTimeout(r, 100));
+        const dataUrl = await toPng(el.firstElementChild as HTMLElement, {
+          width: 1080, height: 1350, pixelRatio: 1,
+        });
+        zip.file(`${String(slide.number).padStart(2,'0')}-${slide.type}.png`, dataUrl.split(',')[1], { base64: true });
         root.unmount();
         el.remove();
       }
@@ -136,7 +111,7 @@ export function NarrativeCarousel() {
 
   return (
     <div className="flex gap-6 h-full">
-      {/* ── Left: Input ─────────────────────────────────────────────────── */}
+      {/* ── Left panel ────────────────────────────────────────────────────── */}
       <div className="w-80 shrink-0 space-y-5 overflow-y-auto pr-2 scrollbar-thin">
         <StrategyContext />
 
@@ -144,13 +119,14 @@ export function NarrativeCarousel() {
           <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Tema / Tópico</label>
           <textarea value={topic} onChange={(e) => setTopic(e.target.value)}
             placeholder="Ex: Por que autônomos perdem clientes sem presença digital..."
-            className="w-full bg-surface-hover border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted resize-none focus:border-brand outline-none" rows={3} />
+            className="w-full bg-surface-hover border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted resize-none focus:border-brand outline-none"
+            rows={3} />
         </div>
 
         <div className="space-y-2">
           <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Ângulo de Audiência</label>
           <input value={audienceAngle} onChange={(e) => setAudienceAngle(e.target.value)}
-            placeholder="Ex: dor do autônomo que não tem clientes..."
+            placeholder="Ex: dor do autônomo sem clientes..."
             className="w-full bg-surface-hover border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-brand outline-none" />
         </div>
 
@@ -186,7 +162,9 @@ export function NarrativeCarousel() {
 
         <button onClick={handleGenerate} disabled={isGenerating}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand hover:bg-brand-dark text-white rounded-lg text-sm font-bold uppercase tracking-wider transition-all disabled:opacity-50">
-          {isGenerating ? <><Loader2 className="w-4 h-4 animate-spin" />Gerando...</> : <><Sparkles className="w-4 h-4" />Gerar Narrativa</>}
+          {isGenerating
+            ? <><Loader2 className="w-4 h-4 animate-spin" />Gerando...</>
+            : <><Sparkles className="w-4 h-4" />Gerar Narrativa</>}
         </button>
 
         {carousel && (
@@ -202,134 +180,76 @@ export function NarrativeCarousel() {
             </button>
           </div>
         )}
-        {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>}
+
+        {error && (
+          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
+        )}
       </div>
 
-      {/* ── Right: Preview ───────────────────────────────────────────────── */}
+      {/* ── Right: slide grid ─────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto pb-8">
         {!carousel && !isGenerating && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20">
-            <div className="w-20 h-20 rounded-2xl bg-brand/10 flex items-center justify-center mb-4"><span className="text-4xl">📖</span></div>
+            <div className="w-20 h-20 rounded-2xl bg-brand/10 flex items-center justify-center mb-4">
+              <span className="text-4xl">📖</span>
+            </div>
             <h2 className="font-heading font-bold text-lg text-text-primary mb-1">Carrossel Narrativo</h2>
-            <p className="text-sm text-text-muted max-w-sm">7-10 slides editoriais com storytelling. Conteúdo que gera save e share.</p>
+            <p className="text-sm text-text-muted max-w-sm">
+              7-10 slides editoriais com storytelling profundo. Conteúdo que gera save e share.
+            </p>
           </div>
         )}
+
         {isGenerating && (
           <div className="flex flex-col items-center justify-center h-full py-20">
-            <div className="w-16 h-16 rounded-2xl bg-brand/20 flex items-center justify-center mb-4 animate-pulse"><span className="text-3xl">✍️</span></div>
+            <div className="w-16 h-16 rounded-2xl bg-brand/20 flex items-center justify-center mb-4 animate-pulse">
+              <span className="text-3xl">✍️</span>
+            </div>
             <p className="text-sm text-text-secondary animate-pulse">Construindo narrativa editorial...</p>
           </div>
         )}
+
         {carousel && (
           <div className="space-y-6">
-            <div className="space-y-2">
+            {/* Header */}
+            <div className="space-y-1.5">
               <h2 className="font-heading font-black text-xl uppercase text-text-primary">{carousel.title}</h2>
               <p className="text-xs text-text-secondary">{carousel.narrative_arc}</p>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] bg-brand/10 text-brand px-2 py-0.5 rounded font-medium">{carousel.shareability_hook}</span>
+                <span className="text-[10px] bg-brand/10 text-brand px-2 py-0.5 rounded font-medium">
+                  {carousel.shareability_hook}
+                </span>
                 <span className="text-[10px] text-text-muted">{carousel.bestTime}</span>
               </div>
             </div>
 
+            {/* Slide grid */}
             <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-              {carousel.slides.map((slide, i) => {
-                const ns = getSettings(slide.number);
-                const imgUrl = imageMap[slide.number];
-                const showImgCtrl = imageControlsSlide === slide.number;
-                const showAdjCtrl = controlsSlide === slide.number;
-
-                return (
-                  <div key={slide.number} className="group space-y-2">
-                    {/* Slide preview + hover buttons */}
-                    <div className="relative">
-                      <NarrativeSlidePreview
-                        slide={slide} theme={activeTheme}
-                        imageUrl={imgUrl} settings={ns}
-                        totalSlides={totalSlides}
-                      />
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => setImageControlsSlide(showImgCtrl ? null : slide.number)}
-                          className={cn('p-1.5 rounded-md bg-black/60 hover:bg-black/80 text-white transition-colors', showImgCtrl && 'bg-brand/80')}
-                          title="Imagem de fundo"
-                        >
-                          <ImagePlus className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => setControlsSlide(showAdjCtrl ? null : slide.number)}
-                          className={cn('p-1.5 rounded-md bg-black/60 hover:bg-black/80 text-white transition-colors', showAdjCtrl && 'bg-brand/80')}
-                          title="Ajustes visuais"
-                        >
-                          <SlidersHorizontal className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => handleExportSlide(slide)}
-                          disabled={exportingSlide === slide.number}
-                          className="p-1.5 rounded-md bg-black/60 hover:bg-black/80 text-white transition-colors disabled:opacity-40"
-                          title="Download PNG 1080×1350"
-                        >
-                          {exportingSlide === slide.number
-                            ? <Loader2 className="w-3 h-3 animate-spin" />
-                            : <Download className="w-3 h-3" />}
-                        </button>
-                      </div>
-                      {imgUrl && (
-                        <span className="absolute bottom-2 left-2 text-[9px] text-emerald-400 bg-black/60 px-1.5 py-0.5 rounded">● img</span>
-                      )}
-                    </div>
-
-                    {/* Image controls */}
-                    {showImgCtrl && (
-                      <SlideImageControls
-                        slideNumber={slide.number}
-                        imagePromptSuggestion={slide.imagePrompt || ''}
-                        currentImageUrl={imgUrl}
-                        onImageChange={(url) => updateImage(slide.number, url)}
-                      />
-                    )}
-
-                    {/* Adjustment sliders */}
-                    {showAdjCtrl && (
-                      <div className="p-2 bg-surface-elevated rounded-lg border border-border space-y-2">
-                        <AdjSlider label="Escala Texto" value={ns.textScale} min={0.5} max={2.0} step={0.05} onValueChange={(v) => updateSettings(slide.number, { textScale: v })} />
-                        <AdjSlider label="Opacidade Img" value={ns.imageOpacity} min={0} max={1} step={0.05} onValueChange={(v) => updateSettings(slide.number, { imageOpacity: v })} />
-                        <AdjSlider label="Zoom Img" value={ns.imageZoom} min={1} max={2.5} step={0.1} onValueChange={(v) => updateSettings(slide.number, { imageZoom: v })} />
-                      </div>
-                    )}
-
-                    {/* Inline text editing */}
-                    {editingSlide === slide.number ? (
-                      <div className="space-y-1.5 p-2 bg-surface-elevated rounded-lg border border-border">
-                        <input
-                          className="w-full bg-surface-hover border border-border rounded px-2 py-1 text-xs font-heading font-bold uppercase text-text-primary focus:border-brand outline-none"
-                          value={slide.headline}
-                          onChange={(e) => handleUpdateSlide(i, 'headline', e.target.value)}
-                        />
-                        <textarea
-                          className="w-full bg-surface-hover border border-border rounded px-2 py-1 text-xs text-text-secondary resize-none focus:border-brand outline-none"
-                          rows={2} value={slide.bodyText || ''}
-                          onChange={(e) => handleUpdateSlide(i, 'bodyText', e.target.value)}
-                        />
-                        <button onClick={() => setEditingSlide(null)} className="text-[10px] text-brand hover:underline">Fechar</button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setEditingSlide(slide.number)}
-                        className="text-[10px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Editar slide
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+              {carousel.slides.map((slide, i) => (
+                <NarrativeSlideCard
+                  key={slide.number}
+                  slide={slide}
+                  slideIndex={i}
+                  theme={activeTheme}
+                  totalSlides={totalSlides}
+                  settings={getSettings(slide.number)}
+                  imageUrl={imageMap[slide.number] ?? null}
+                  onUpdateSlide={updateSlide}
+                  onUpdateSettings={updateSettings}
+                  onImageChange={updateImage}
+                />
+              ))}
             </div>
 
+            {/* Caption */}
             {carousel.caption && (
               <div className="bg-surface-elevated rounded-xl border border-border p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Caption</span>
-                  <button onClick={() => navigator.clipboard.writeText(carousel.caption)} className="text-text-muted hover:text-brand p-1"><Copy className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => navigator.clipboard.writeText(carousel.caption)}
+                    className="text-text-muted hover:text-brand p-1">
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <p className="text-sm text-text-primary whitespace-pre-line leading-relaxed">{carousel.caption}</p>
               </div>

@@ -2,38 +2,96 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders } from '../_shared/cors.ts';
 import { getStrategyContext, getUserId } from '../_shared/strategy.ts';
 
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MODEL = "anthropic/claude-sonnet-4-6";
+
 function extractJSON(raw: string): Record<string, unknown> {
-  let cleaned = raw.trim().replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
+  // Strip markdown code fences from start and end only
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+  }
+  cleaned = cleaned.trim();
+
+  // Direct parse
   try { return JSON.parse(cleaned); } catch { /* continue */ }
-  const match = cleaned.match(/\{[\s\S]*\}/);
-  if (match) { try { return JSON.parse(match[0]); } catch { /* continue */ } }
-  throw new Error('JSON não encontrado na resposta da IA');
+
+  // Find outermost { ... }
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start !== -1 && end > start) {
+    try { return JSON.parse(cleaned.substring(start, end + 1)); } catch { /* continue */ }
+  }
+
+  const preview = raw.substring(0, 300).replace(/\n/g, '\\n');
+  throw new Error(`JSON inválido (${raw.length} chars). Preview: "${preview}"`);
+}
+
+async function callOpenRouter(
+  messages: Array<{ role: string; content: string }>,
+  options: Record<string, unknown> = {},
+): Promise<Record<string, unknown>> {
+  const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY não configurada");
+
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://dqef.app",
+      "X-Title": "DQEF Studio",
+    },
+    body: JSON.stringify({ model: MODEL, messages, ...options }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`OpenRouter error ${res.status}: ${err}`);
+  }
+
+  return res.json();
 }
 
 const NARRATIVE_RULES = `
 ESTRATEGISTA DE CONTEÚDO NARRATIVO — Carrosséis editoriais 7-10 slides.
 Storytelling profundo que gera SAVE e SHARE.
 
-ESTRUTURA: HOOK → CONTEXTO → TENSÃO/DADOS → VIRADA → PROVA → CTA
+ESTRUTURA NARRATIVA: HOOK → CONTEXTO → TENSÃO/DADOS → VIRADA → PROVA → INSIGHT → CTA
+Cada slide deve avançar a narrativa. Nunca repita ângulos. Crie tensão crescente até o CTA.
 
-COPY: Headlines BOLD caixa alta (máx 8 palavras) + parágrafos com **negrito**.
-Dados com fonte verificável "(Fonte, Ano)". Se sem fonte real, marcar "~estimativa".
+COPY RULES:
+- Headlines: CAIXA ALTA, máx 8 palavras, impactantes e diretos
+- bodyText: 2-4 frases densas, use **negrito** para dados e destaques
+- Dados reais: "(Fonte, Ano)" | sem fonte real: "~estimativa"
+- Nunca use jargão corporativo — fale como par para par, brasileiro autônomo
+- ESCAPE corretamente todos os caracteres especiais no JSON
 
-LAYOUTS: full-image | split | text-heavy | quote | cta
-TEMAS: editorial-dark (#0F0F0F) | editorial-cream (#F5F0E8) | brand-bold (#E8603C)
+LAYOUTS (escolha o mais impactante por slide):
+- full-image: hero image full-bleed, copy embaixo — use em hook e pivot
+- split: imagem em 50%, texto em 50% — use em evidência e proof
+- text-heavy: texto com borda esquerda laranja, sem imagem — use em contexto e dados
+- quote: citação centralizada em itálico — use em insight ou prova social
+- clean-card: headline ENORME em cor accent, body abaixo, imagem como card inset — use em CTA ou número impactante
+- cta: centrado com pill "pronto. resolvido." — slide final
 
-IMAGE PROMPTS em inglês, mín 60 palavras, cinematográficos, conectados ao copy.
-PROIBIDO: imagens genéricas, modelos posando, fotos stock.
+IMAGE PROMPTS: inglês, mín 60 palavras, estilo documentário.
+Personagem: autônomo brasileiro 30-50 anos, mãos calejadas, ambiente real de trabalho.
+Canon R5, 35mm f/2.8, luz natural, SEM TEXTO, SEM LOGOS na imagem.
 
 JSON:
 {
   "title": "string", "theme": "editorial-dark|editorial-cream|brand-bold",
   "narrative_arc": "string", "target_connection": "string",
   "shareability_hook": "string", "caption": "string", "bestTime": "string",
-  "slides": [{ "number": 1, "type": "hook", "layout": "full-image",
-    "headline": "HEADLINE", "bodyText": "texto com **bold**",
-    "sourceLabel": "fonte", "imagePrompt": "prompt em inglês",
-    "imageSide": "full", "bgColor": "#hex", "textColor": "#hex", "accentColor": "#hex" }]
+  "slides": [{
+    "number": 1, "type": "hook", "layout": "full-image",
+    "headline": "HEADLINE EM CAIXA ALTA",
+    "bodyText": "Texto com **destaques** em negrito.",
+    "sourceLabel": "IBGE, 2024",
+    "imagePrompt": "Documentary photography prompt in English, 60+ words...",
+    "imageSide": "full"
+  }]
 }`;
 
 Deno.serve(async (req) => {
@@ -49,26 +107,43 @@ Deno.serve(async (req) => {
       ? `Crie carrossel narrativo:\nTEMA: ${topic}\nÂNGULO: ${audience_angle || 'mais relevante'}\nTOM: ${tone}\nCANAL: ${channel}\nSLIDES: ${Math.min(Math.max(num_slides, 7), 10)}\n${researchData ? `DADOS:\n${researchData}` : 'Marque dados como ~estimativa.'}\nRetorne JSON.`
       : `Modo autônomo: escolha tema trending, crie ${num_slides} slides narrativos. Marque dados como ~estimativa.`;
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const INTERNAL_SECRET = Deno.env.get("INTERNAL_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const data = await callOpenRouter(
+      [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+      { temperature: 0.9, max_tokens: 8192, response_format: { type: "json_object" } },
+    );
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-router`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${INTERNAL_SECRET}` },
-      body: JSON.stringify({ task_type: "strategy", messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], options: { temperature: 0.9 }, user_id: userId, function_name: "generate-narrative-carousel" }),
-    });
+    const content = (data as { choices?: Array<{ message?: { content?: string } }> }).choices?.[0]?.message?.content ?? '';
+    console.log('RAW_CONTENT_LENGTH:', content.length);
+    console.log('RAW_CONTENT_PREVIEW:', content.substring(0, 500));
+    console.log('RAW_CONTENT_END:', content.substring(content.length - 200));
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: "Erro na IA" }));
-      return new Response(JSON.stringify(err), { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (!content) {
+      // OpenRouter returned an error structure
+      console.error('NO_CONTENT, full data:', JSON.stringify(data).substring(0, 1000));
+      throw new Error(`OpenRouter sem conteúdo: ${JSON.stringify(data).substring(0, 300)}`);
     }
 
-    const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content ?? '';
     const carousel = extractJSON(content);
 
-    return new Response(JSON.stringify({ carousel, autonomous: !topic }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Fire-and-forget usage log
+    if (userId) {
+      const { createClient } = await import('jsr:@supabase/supabase-js@2');
+      const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      sb.from('ai_usage_log').insert({
+        user_id: userId, function_name: 'generate-narrative-carousel', task_type: 'strategy',
+        model_used: MODEL, provider: 'openrouter', success: true,
+      }).then(() => {});
+    }
+
+    return new Response(JSON.stringify({ carousel, autonomous: !topic }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Erro interno' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const msg = error instanceof Error ? error.message : 'Erro interno';
+    console.error('generate-narrative-carousel error:', msg);
+    return new Response(
+      JSON.stringify({ error: msg }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   }
 });

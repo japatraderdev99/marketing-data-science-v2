@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { toPng } from 'html-to-image';
-import { Download, SlidersHorizontal, Copy, Trash2, Pencil, Check, ImagePlus, ImageOff } from 'lucide-react';
+import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
+import { Download, SlidersHorizontal, Copy, Trash2, Pencil, Check, ImagePlus, ImageOff, Loader2 } from 'lucide-react';
 import type { BatchVariation, CarouselTheme, SlideSettings, SlideOutput } from '@/types';
 import { MediaPickerModal } from './components/MediaPickerModal';
 import { DEFAULT_SLIDE_SETTINGS } from '@/types';
@@ -24,10 +26,10 @@ export function VariationCard({
   variation, theme, settings, isSelected, onToggleSelect,
   onUpdateVariation, onUpdateSettings, onRemove,
 }: VariationCardProps) {
-  const slideRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
 
   const slide: SlideOutput = {
@@ -37,16 +39,32 @@ export function VariationCard({
     bgStyle: 'dark', layout: 'text-only',
   };
 
+  // Pixel-perfect export: render at 1080px in off-screen container
   const handleExportPng = async () => {
-    if (!slideRef.current) return;
-    const dataUrl = await toPng(slideRef.current, {
-      width: 1080, height: 1350, pixelRatio: 1,
-      style: { transform: `scale(${1080 / 340})`, transformOrigin: 'top left' },
-    });
-    const link = document.createElement('a');
-    link.download = `criativo-${variation.id.slice(0, 8)}.png`;
-    link.href = dataUrl;
-    link.click();
+    setIsExporting(true);
+    try {
+      const div = document.createElement('div');
+      div.style.cssText = 'position:fixed;top:-9999px;left:-9999px;pointer-events:none;';
+      document.body.appendChild(div);
+      const root = createRoot(div);
+      flushSync(() => root.render(
+        <SlidePreview slide={slide} theme={theme} width={1080} height={1350}
+          settings={settings} imageUrl={variation.mediaUrl} isExport />
+      ));
+      await document.fonts.ready;
+      await new Promise(r => setTimeout(r, 100));
+      const dataUrl = await toPng(div.firstElementChild as HTMLElement, {
+        width: 1080, height: 1350, pixelRatio: 1,
+      });
+      root.unmount();
+      document.body.removeChild(div);
+      const a = document.createElement('a');
+      a.download = `criativo-${variation.id.slice(0, 8)}.png`;
+      a.href = dataUrl;
+      a.click();
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleCopy = () => {
@@ -72,8 +90,8 @@ export function VariationCard({
           <button onClick={() => setIsEditing(!isEditing)} className={cn('p-1 rounded text-text-muted hover:text-brand transition-colors', isEditing && 'text-brand bg-brand/10')} title="Editar">
             <Pencil className="w-3 h-3" />
           </button>
-          <button onClick={handleExportPng} className="p-1 rounded text-text-muted hover:text-brand transition-colors" title="PNG">
-            <Download className="w-3 h-3" />
+          <button onClick={handleExportPng} disabled={isExporting} className="p-1 rounded text-text-muted hover:text-brand transition-colors disabled:opacity-40" title="PNG">
+            {isExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
           </button>
           <button onClick={handleCopy} className="p-1 rounded text-text-muted hover:text-brand transition-colors" title="Copiar">
             {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
@@ -94,7 +112,7 @@ export function VariationCard({
 
       {/* Preview */}
       <div className={cn('relative', variation.status === 'error' && 'opacity-50')}>
-        <SlidePreview ref={slideRef} slide={slide} theme={theme} settings={settings} imageUrl={variation.mediaUrl} />
+        <SlidePreview slide={slide} theme={theme} settings={settings} imageUrl={variation.mediaUrl} />
         {variation.status === 'error' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl">
             <span className="text-xs text-red-400 font-medium">Erro na geração</span>
