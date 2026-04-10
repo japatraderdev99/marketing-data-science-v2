@@ -75,7 +75,7 @@ export function useStrategyData() {
       if (error) throw error;
       return (data ?? []) as KbDoc[];
     },
-    enabled: !!userId && isSupabaseConfigured,
+    enabled: !!userId && !!isSupabaseConfigured,
     refetchInterval: (query) => {
       const hasPending = query.state.data?.some(d => d.status === 'pending' || d.status === 'processing');
       return hasPending ? 5000 : false;
@@ -95,7 +95,7 @@ export function useStrategyData() {
       if (error) throw error;
       return (data ?? []) as Benchmark[];
     },
-    enabled: !!userId && isSupabaseConfigured,
+    enabled: !!userId && !!isSupabaseConfigured,
     refetchInterval: (query) => {
       const hasPending = query.state.data?.some(d => d.status === 'pending' || d.status === 'processing');
       return hasPending ? 5000 : false;

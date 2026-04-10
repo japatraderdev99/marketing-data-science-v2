@@ -34,6 +34,6 @@ export function useGoogleAdsKPIs(period: string) {
 
       return { ...totals, ctr, cpc };
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }

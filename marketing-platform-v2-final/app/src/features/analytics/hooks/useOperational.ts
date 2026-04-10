@@ -58,7 +58,7 @@ export function useOperationalSummary(period: string) {
       };
       return result;
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -111,7 +111,7 @@ export function useOperationalStatuses(period: string) {
           color: STATUS_COLORS[label.toLowerCase()] ?? 'bg-text-muted',
         }));
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -148,6 +148,6 @@ export function useOperationalCities(period: string) {
 
       return [...grouped.values()].sort((a, b) => b.bookings - a.bookings);
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }

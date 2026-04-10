@@ -38,7 +38,7 @@ export function useMediaItems(filters: MediaFilters = {}) {
 
       return (data ?? []).map(mapDbToMediaItem);
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -124,7 +124,7 @@ export function useMediaTaggingPoll(mediaId: string | null) {
       if (error) throw error;
       return data;
     },
-    enabled: !!mediaId && isSupabaseConfigured,
+    enabled: !!mediaId && !!isSupabaseConfigured,
     refetchInterval: (query) => {
       const status = query.state.data?.tagging_status;
       return status === 'pending' || status === 'processing' ? 2000 : false;

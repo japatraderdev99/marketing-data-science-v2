@@ -45,7 +45,7 @@ export function useGA4KPIs(period: string) {
         totalRows: totals.count,
       };
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -81,7 +81,7 @@ export function useGA4Trend(period: string) {
         users: vals.users,
       }));
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -117,7 +117,7 @@ export function useGA4BounceRate(period: string) {
         conversionRate: Math.round((v.convSum / v.count) * 100) / 100,
       }));
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -157,7 +157,7 @@ export function useGA4Devices(period: string) {
           fill: COLORS[name.toLowerCase()] ?? '#808080',
         }));
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 

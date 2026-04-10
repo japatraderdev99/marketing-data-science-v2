@@ -45,7 +45,7 @@ export function useContentInsights() {
       if (error) throw error;
       return (data ?? []) as ContentInsight[];
     },
-    enabled: !!userId && isSupabaseConfigured,
+    enabled: !!userId && !!isSupabaseConfigured,
   });
 
   const runAnalysis = async () => {

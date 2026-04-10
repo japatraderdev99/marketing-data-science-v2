@@ -48,7 +48,7 @@ export function useCampaigns() {
       if (error) throw error;
       return (data ?? []) as Campaign[];
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 

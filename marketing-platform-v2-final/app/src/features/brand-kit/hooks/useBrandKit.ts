@@ -50,7 +50,7 @@ export function useBrandAssets() {
       if (error) throw error;
       return (data ?? []) as BrandAsset[];
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -67,7 +67,7 @@ export function useBrandColors() {
       if (error) throw error;
       return (data ?? []) as BrandColor[];
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -84,7 +84,7 @@ export function useBrandFonts() {
       if (error) throw error;
       return (data ?? []) as BrandFont[];
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 

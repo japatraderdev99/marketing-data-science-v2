@@ -36,7 +36,7 @@ export function useMetaAdsKPIs(period: string) {
 
       return { ...totals, ctr, cpc };
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -70,7 +70,7 @@ export function useMetaAdsCampaignSpend(period: string) {
           fill: COLORS[i % COLORS.length],
         }));
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -124,7 +124,7 @@ export function useMetaAdsRanking(period: string) {
           return { name, campaign: d.campaign, spend: d.spend, impressions: d.impressions, clicks: d.clicks, ctr, cpc, conversions: d.conversions, score, scoreLabel, scoreColor };
         });
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
@@ -153,6 +153,6 @@ export function useMetaAdsCount(period: string) {
       const uniqueAds = new Set((ads ?? []).map(a => a.ad_id)).size;
       return { totalRows: count ?? 0, uniqueAds };
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }

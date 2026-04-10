@@ -19,7 +19,7 @@ export function useStrategyKnowledge() {
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!user?.id && isSupabaseConfigured,
+    enabled: !!user?.id && !!isSupabaseConfigured,
   });
 }
 
@@ -40,7 +40,7 @@ export function usePlaybook(type: 'image' | 'copy' | 'video' = 'copy') {
       if (error) throw error;
       return data ?? null;
     },
-    enabled: !!user?.id && isSupabaseConfigured,
+    enabled: !!user?.id && !!isSupabaseConfigured,
   });
 }
 

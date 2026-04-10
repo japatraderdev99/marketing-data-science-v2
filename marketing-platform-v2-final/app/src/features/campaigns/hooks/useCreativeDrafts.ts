@@ -40,7 +40,7 @@ export function useCreativeDrafts() {
       if (error) throw error;
       return (data ?? []) as CreativeDraft[];
     },
-    enabled: !!workspaceId && isSupabaseConfigured,
+    enabled: !!workspaceId && !!isSupabaseConfigured,
   });
 }
 
