@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { Sparkles, Upload, Images, Trash2, Loader2, AlertCircle, Wand2 } from 'lucide-react';
+import { Sparkles, Upload, Images, Trash2, Loader2, AlertCircle, Wand2, BookmarkPlus, Check } from 'lucide-react';
 import { useSlideImage } from '../hooks/useSlideImage';
 import { MediaPickerModal } from '@/features/criativo/components/MediaPickerModal';
+import { useAddToLibrary } from '@/features/media/hooks/useAddToLibrary';
 import { cn } from '@/lib/utils';
 
 const QUICK_TAGS = [
@@ -14,6 +15,7 @@ interface SlideImageControlsProps {
   imagePromptSuggestion?: string;
   currentImageUrl?: string | null;
   onImageChange: (url: string | null) => void;
+  slideContext?: { headline?: string; slideType?: string; topic?: string };
 }
 
 export function SlideImageControls({
@@ -21,11 +23,22 @@ export function SlideImageControls({
   imagePromptSuggestion = '',
   currentImageUrl,
   onImageChange,
+  slideContext,
 }: SlideImageControlsProps) {
   const [prompt, setPrompt] = useState(imagePromptSuggestion);
   const [showPicker, setShowPicker] = useState(false);
+  const [savedToLib, setSavedToLib] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { isGenerating, isUploading, error, generate, upload, clearError } = useSlideImage();
+  const addToLibrary = useAddToLibrary();
+
+  const handleSaveToLibrary = async () => {
+    if (!currentImageUrl) return;
+    setSavedToLib(false);
+    await addToLibrary.mutateAsync({ imageUrl: currentImageUrl, context: slideContext });
+    setSavedToLib(true);
+    setTimeout(() => setSavedToLib(false), 3000);
+  };
 
   const handleGenerate = async () => {
     clearError();
@@ -130,13 +143,32 @@ export function SlideImageControls({
         </button>
 
         {currentImageUrl && (
-          <button
-            onClick={() => onImageChange(null)}
-            className="col-span-2 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md border border-red-500/30 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
-          >
-            <Trash2 className="w-3 h-3" />
-            Tirar imagem
-          </button>
+          <>
+            <button
+              onClick={handleSaveToLibrary}
+              disabled={addToLibrary.isPending || savedToLib}
+              className={cn(
+                'col-span-2 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md border text-xs font-medium transition-all',
+                savedToLib
+                  ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10'
+                  : 'border-brand/40 text-brand hover:bg-brand/10 disabled:opacity-50',
+              )}
+            >
+              {addToLibrary.isPending
+                ? <Loader2 className="w-3 h-3 animate-spin" />
+                : savedToLib
+                  ? <Check className="w-3 h-3" />
+                  : <BookmarkPlus className="w-3 h-3" />}
+              {savedToLib ? 'Salvo na biblioteca!' : 'Salvar na biblioteca (sem texto)'}
+            </button>
+            <button
+              onClick={() => onImageChange(null)}
+              className="col-span-2 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md border border-red-500/30 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 className="w-3 h-3" />
+              Tirar imagem
+            </button>
+          </>
         )}
       </div>
 
@@ -145,6 +177,7 @@ export function SlideImageControls({
       {showPicker && (
         <MediaPickerModal
           currentUrl={currentImageUrl}
+          context={slideContext}
           onSelect={(url) => { onImageChange(url); setShowPicker(false); }}
           onClose={() => setShowPicker(false)}
         />

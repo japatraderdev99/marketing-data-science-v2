@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { X, Search, Image, Loader2, Check } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { X, Search, Image, Loader2, Check, Sparkles } from 'lucide-react';
 import { useMediaItems } from '@/features/media/hooks/useMediaLibrary';
-import type { MediaMood } from '@/types';
+import type { MediaItem, MediaMood } from '@/types';
 import { cn } from '@/lib/utils';
 
 const MOOD_OPTIONS: { value: MediaMood | ''; label: string }[] = [
@@ -18,14 +18,54 @@ interface MediaPickerModalProps {
   onSelect: (url: string) => void;
   onClose: () => void;
   currentUrl?: string | null;
+  context?: { headline?: string; slideType?: string; topic?: string };
 }
 
-export function MediaPickerModal({ onSelect, onClose, currentUrl }: MediaPickerModalProps) {
+// Score an item for relevance to context
+function scoreItem(item: MediaItem, keywords: string[]): number {
+  if (!keywords.length) return 0;
+  let score = 0;
+  const haystack = [
+    ...(item.ai_tags ?? []),
+    item.ai_description ?? '',
+    item.ai_mood ?? '',
+    item.ai_style ?? '',
+    ...(item.ai_subjects ?? []),
+  ].join(' ').toLowerCase();
+  for (const kw of keywords) {
+    if (haystack.includes(kw)) score += 1;
+  }
+  // Bonus from fit_score_map (take max)
+  const fitScores = Object.values(item.ai_fit_score_map ?? {}) as number[];
+  if (fitScores.length) score += Math.max(...fitScores) * 2;
+  return score;
+}
+
+export function MediaPickerModal({ onSelect, onClose, currentUrl, context }: MediaPickerModalProps) {
   const [search, setSearch] = useState('');
   const [mood, setMood] = useState<MediaMood | ''>('');
   const [hovered, setHovered] = useState<string | null>(null);
 
   const { data: items = [], isLoading } = useMediaItems({ search, mood });
+
+  // Context keywords derived from headline + topic
+  const contextKeywords = useMemo(() => {
+    if (!context) return [];
+    const raw = `${context.headline ?? ''} ${context.topic ?? ''} ${context.slideType ?? ''}`;
+    return raw.toLowerCase().split(/[\s,]+/).filter(w => w.length > 3);
+  }, [context]);
+
+  // Suggested items: tagged items scored by relevance, top 6
+  const suggestions = useMemo(() => {
+    if (!contextKeywords.length) return [];
+    return items
+      .filter(i => i.tagging_status === 'done')
+      .map(i => ({ item: i, score: scoreItem(i, contextKeywords) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(({ item }) => item);
+  }, [items, contextKeywords]);
 
   const handleSelect = (url: string) => {
     onSelect(url);
@@ -78,7 +118,40 @@ export function MediaPickerModal({ onSelect, onClose, currentUrl }: MediaPickerM
         </div>
 
         {/* Grid */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Smart suggestions */}
+          {suggestions.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-brand" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-brand">Sugestões para esta copy</span>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                {suggestions.map((item) => {
+                  const isSelected = item.public_url === currentUrl;
+                  return (
+                    <button
+                      key={`sug-${item.id}`}
+                      onClick={() => { onSelect(item.public_url); onClose(); }}
+                      className={cn(
+                        'relative aspect-square rounded-lg overflow-hidden border-2 transition-all',
+                        isSelected ? 'border-brand ring-2 ring-brand/30' : 'border-brand/30 hover:border-brand',
+                      )}
+                    >
+                      <img src={item.public_url} alt={item.file_name} className="w-full h-full object-cover" loading="lazy" />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-brand/30 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="h-px bg-border" />
+            </div>
+          )}
+
           {isLoading && (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 animate-spin text-brand" />

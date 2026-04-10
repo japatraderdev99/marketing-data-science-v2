@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { media_id, image_url } = await req.json();
+    const { media_id, image_url, context } = await req.json();
     if (!media_id || !image_url) {
       return new Response(JSON.stringify({ error: "media_id e image_url são obrigatórios" }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
   "style": "documentário|editorial|publicitário|casual",
   "fit_score_map": { "RAIVA": 0.0-1.0, "DINHEIRO": 0.0-1.0, "ORGULHO": 0.0-1.0, "URGÊNCIA": 0.0-1.0, "ALÍVIO": 0.0-1.0 }
 }
-Contexto: plataforma de marketing para autônomos brasileiros.` },
+Contexto: plataforma de marketing para autônomos brasileiros.${context ? `\nContexto do slide: ${context}` : ''}` },
           { role: 'user', content: [{ type: 'image_url', image_url: { url: image_url } }] },
         ],
         function_name: "tag-media",

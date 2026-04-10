@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Sparkles, Loader2, Copy, RotateCcw, Download } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
-import type { NarrativeThemeId, NarrativeSlide } from '@/types';
+import type { NarrativeThemeId, NarrativeSlide, NarrativeCarouselOutput } from '@/types';
 import { NarrativeSlidePreview } from './components/NarrativeSlidePreview';
 import type { NarrativeSlideSettings } from './components/NarrativeSlidePreview';
 import { NarrativeSlideCard } from './components/NarrativeSlideCard';
 import { StrategyContext } from '@/components/shared/StrategyContext';
 import { useNarrativeGeneration } from '@/hooks/useNarrativeGeneration';
-import { useSaveDraft } from '@/features/criativo/hooks/useCreativeDrafts';
+import { DraftPanel } from '@/features/criativo/components/DraftPanel';
 import { cn } from '@/lib/utils';
 
 const THEMES: { id: NarrativeThemeId; label: string; swatch: string; desc: string }[] = [
@@ -28,8 +28,6 @@ const DEFAULT_SS: NarrativeSlideSettings = {
 
 export function NarrativeCarousel() {
   const { carousel, setCarousel, isGenerating, error, generate, reset } = useNarrativeGeneration();
-  const saveDraft = useSaveDraft();
-  const savedTitleRef = useRef<string | null>(null);
 
   const [topic, setTopic]               = useState('');
   const [audienceAngle, setAudienceAngle] = useState('');
@@ -41,16 +39,6 @@ export function NarrativeCarousel() {
 
   const activeTheme = (themeOverride || carousel?.theme || 'dqef-editorial') as NarrativeThemeId;
   const totalSlides = carousel?.slides.length ?? 0;
-
-  // Auto-save draft when title changes
-  useEffect(() => {
-    if (!carousel || savedTitleRef.current === carousel.title) return;
-    savedTitleRef.current = carousel.title;
-    saveDraft.mutate({
-      type: 'carousel_narrative', title: carousel.title,
-      data: carousel as unknown as Record<string, unknown>,
-    });
-  }, [carousel?.title]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getSettings = (n: number): NarrativeSlideSettings => settingsMap[n] || { ...DEFAULT_SS };
 
@@ -166,6 +154,19 @@ export function NarrativeCarousel() {
             ? <><Loader2 className="w-4 h-4 animate-spin" />Gerando...</>
             : <><Sparkles className="w-4 h-4" />Gerar Narrativa</>}
         </button>
+
+        <DraftPanel
+          type="carousel_narrative"
+          currentData={carousel ? (carousel as unknown as Record<string, unknown>) : undefined}
+          currentTitle={carousel?.title}
+          onLoad={(data) => {
+            const loaded = data as unknown as NarrativeCarouselOutput;
+            setCarousel(loaded);
+            setThemeOverride((loaded.theme as NarrativeThemeId) || 'dqef-editorial');
+            setSettingsMap({});
+            setImageMap({});
+          }}
+        />
 
         {carousel && (
           <div className="flex gap-2">

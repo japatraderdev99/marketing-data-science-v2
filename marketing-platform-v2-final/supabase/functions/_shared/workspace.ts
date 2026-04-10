@@ -1,8 +1,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-/** Resolve workspace_id from the authenticated user's auth header. */
+/** Resolve user_id from the authenticated request's Authorization header. */
 export async function resolveWorkspace(req: Request): Promise<{
-  workspaceId: string;
+  userId: string;
   supabase: ReturnType<typeof createClient>;
 } | null> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -16,15 +16,5 @@ export async function resolveWorkspace(req: Request): Promise<{
   const { data: { user } } = await anonClient.auth.getUser(authHeader.replace('Bearer ', ''));
   if (!user) return null;
 
-  // Get user's first workspace
-  const { data: membership } = await supabase
-    .from('workspace_members')
-    .select('workspace_id')
-    .eq('user_id', user.id)
-    .limit(1)
-    .single();
-
-  if (!membership?.workspace_id) return null;
-
-  return { workspaceId: membership.workspace_id, supabase };
+  return { userId: user.id, supabase };
 }

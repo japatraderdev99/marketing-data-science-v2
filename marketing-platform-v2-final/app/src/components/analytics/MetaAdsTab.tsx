@@ -1,7 +1,10 @@
-import { Megaphone, Eye, MousePointerClick, DollarSign, TrendingUp, ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Megaphone, Eye, MousePointerClick, DollarSign, TrendingUp, ExternalLink, RefreshCw, Loader2, Bookmark, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMetaAdsKPIs, useMetaAdsCampaignSpend, useMetaAdsRanking, useMetaAdsCount } from '@/features/analytics/hooks/useMetaAds';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 function fmtNum(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -10,15 +13,31 @@ function fmtNum(n: number) {
 }
 
 export default function MetaAdsTab({ period }: { period: string }) {
+  const { user } = useAuth();
   const { data: kpi, isLoading: loadingKpi } = useMetaAdsKPIs(period);
   const { data: campaignSpend, isLoading: loadingSpend } = useMetaAdsCampaignSpend(period);
   const { data: adsRanking, isLoading: loadingAds } = useMetaAdsRanking(period);
   const { data: counts } = useMetaAdsCount(period);
+  const [savedRef, setSavedRef] = useState<string | null>(null);
 
   const k = kpi ?? { impressions: 0, clicks: 0, spend: 0, conversions: 0, ctr: 0, cpc: 0 };
   const spend = campaignSpend ?? [];
   const ads = adsRanking ?? [];
   const isLoading = loadingKpi || loadingSpend || loadingAds;
+
+  const saveReference = async (ad: typeof ads[0]) => {
+    if (!user?.id) return;
+    const adKey = `${ad.name}-${ad.campaign}`;
+    await supabase.from('creative_references').insert({
+      user_id: user.id,
+      source_type: 'meta_ad',
+      source_id: ad.name,
+      reference_data: { name: ad.name, campaign: ad.campaign, spend: ad.spend, ctr: ad.ctr, cpc: ad.cpc, conversions: ad.conversions, score: ad.score, scoreLabel: ad.scoreLabel },
+      used_in_module: 'criativo',
+    });
+    setSavedRef(adKey);
+    setTimeout(() => setSavedRef(null), 3000);
+  };
 
   return (
     <div className="space-y-4">
@@ -132,7 +151,22 @@ export default function MetaAdsTab({ period }: { period: string }) {
                       </span>
                     </td>
                     <td className="py-3 text-right">
-                      <ExternalLink className="w-3.5 h-3.5 text-text-muted hover:text-text-primary cursor-pointer" />
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <button
+                          onClick={() => saveReference(ad)}
+                          title="Usar como referência no Criativo"
+                          className={cn('flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors',
+                            savedRef === `${ad.name}-${ad.campaign}`
+                              ? 'text-emerald-400 bg-emerald-400/10'
+                              : 'text-text-muted hover:text-brand hover:bg-brand/10'
+                          )}
+                        >
+                          {savedRef === `${ad.name}-${ad.campaign}`
+                            ? <><Check className="w-2.5 h-2.5" /> Salvo</>
+                            : <><Bookmark className="w-2.5 h-2.5" /> Ref.</>}
+                        </button>
+                        <ExternalLink className="w-3.5 h-3.5 text-text-muted hover:text-text-primary cursor-pointer" />
+                      </div>
                     </td>
                   </tr>
                 ))}

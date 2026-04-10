@@ -209,6 +209,7 @@ Retorne APENAS JSON: { "headline": "NOVA HEADLINE", "bodyText": "Novo texto com 
           imagePromptSuggestion={slide.imagePrompt || ''}
           currentImageUrl={imageUrl}
           onImageChange={(url) => onImageChange(slide.number, url)}
+          slideContext={{ headline: slide.headline, slideType: slide.type }}
         />
       )}
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   BarChart3, Sparkles, Settings2, Globe,
-  DollarSign, Target, Megaphone, FileText,
+  DollarSign, Target, Megaphone, FileText, FlaskConical,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import OperacionalTab from '@/components/analytics/OperacionalTab';
@@ -10,22 +10,26 @@ import FunilE2ETab from '@/components/analytics/FunilE2ETab';
 import GA4Tab from '@/components/analytics/GA4Tab';
 import MetaAdsTab from '@/components/analytics/MetaAdsTab';
 import RelatorioCMOTab from '@/components/analytics/RelatorioCMOTab';
+import DataSciencePanel from '@/components/analytics/DataSciencePanel';
+import DiagnosisModal from '@/components/analytics/DiagnosisModal';
 
 type Period = '7d' | '30d' | '90d';
-type TabId = 'operacional' | 'financeiro' | 'funil' | 'ga4' | 'meta-ads' | 'cmo-reports';
+type TabId = 'operacional' | 'financeiro' | 'funil' | 'ga4' | 'meta-ads' | 'cmo-reports' | 'data-science';
 
-const TABS: { id: TabId; label: string; icon: typeof BarChart3 }[] = [
-  { id: 'operacional', label: 'Operacional', icon: Settings2 },
-  { id: 'financeiro', label: 'Saúde Financeira', icon: DollarSign },
-  { id: 'funil', label: 'Funil E2E', icon: Target },
-  { id: 'ga4', label: 'GA4', icon: Globe },
-  { id: 'meta-ads', label: 'Meta Ads', icon: Megaphone },
-  { id: 'cmo-reports', label: 'Relatórios CMO', icon: FileText },
+const TABS: { id: TabId; label: string; icon: typeof BarChart3; badge?: string }[] = [
+  { id: 'operacional',   label: 'Operacional',    icon: Settings2 },
+  { id: 'financeiro',    label: 'Saúde Financeira',icon: DollarSign },
+  { id: 'funil',         label: 'Funil E2E',       icon: Target },
+  { id: 'ga4',           label: 'GA4',             icon: Globe },
+  { id: 'meta-ads',      label: 'Meta Ads',        icon: Megaphone },
+  { id: 'cmo-reports',   label: 'Relatórios CMO',  icon: FileText },
+  { id: 'data-science',  label: 'Data Science',    icon: FlaskConical, badge: 'IA' },
 ];
 
 export default function Analytics() {
   const [tab, setTab] = useState<TabId>('operacional');
   const [period, setPeriod] = useState<Period>('30d');
+  const [diagnosisOpen, setDiagnosisOpen] = useState(false);
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-5">
@@ -39,7 +43,10 @@ export default function Analytics() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg gradient-brand text-white text-xs font-bold">
+          <button
+            onClick={() => setDiagnosisOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg gradient-brand text-white text-xs font-bold hover:opacity-90 transition-opacity"
+          >
             <Sparkles className="w-4 h-4" />
             Diagnóstico IA
           </button>
@@ -62,12 +69,11 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Subtitle */}
       <p className="text-sm text-text-muted">Inteligência de Marketing — DQEF Hub</p>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1">
-        {TABS.map(({ id, label, icon: Icon }) => (
+      <div className="flex gap-1 flex-wrap">
+        {TABS.map(({ id, label, icon: Icon, badge }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -80,17 +86,28 @@ export default function Analytics() {
           >
             <Icon className="w-3.5 h-3.5" />
             {label}
+            {badge && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-purple-400/20 text-purple-400">
+                {badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      {tab === 'operacional' && <OperacionalTab period={period} />}
-      {tab === 'financeiro' && <SaudeFinanceiraTab period={period} />}
-      {tab === 'funil' && <FunilE2ETab period={period} />}
-      {tab === 'ga4' && <GA4Tab period={period} />}
-      {tab === 'meta-ads' && <MetaAdsTab period={period} />}
-      {tab === 'cmo-reports' && <RelatorioCMOTab />}
+      {tab === 'operacional'   && <OperacionalTab period={period} />}
+      {tab === 'financeiro'    && <SaudeFinanceiraTab period={period} />}
+      {tab === 'funil'         && <FunilE2ETab period={period} />}
+      {tab === 'ga4'           && <GA4Tab period={period} />}
+      {tab === 'meta-ads'      && <MetaAdsTab period={period} />}
+      {tab === 'cmo-reports'   && <RelatorioCMOTab />}
+      {tab === 'data-science'  && <DataSciencePanel />}
+
+      {/* Diagnosis Modal */}
+      {diagnosisOpen && (
+        <DiagnosisModal onClose={() => setDiagnosisOpen(false)} period={period} />
+      )}
     </div>
   );
 }
