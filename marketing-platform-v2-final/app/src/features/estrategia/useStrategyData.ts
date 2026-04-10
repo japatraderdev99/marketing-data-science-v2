@@ -138,6 +138,15 @@ export function useStrategyData() {
     }
   };
 
+  const reprocessDoc = async (id: string, storagePath: string, documentName: string) => {
+    await supabase.from('strategy_knowledge').update({ status: 'pending' }).eq('id', id);
+    const { error } = await supabase.functions.invoke('analyze-brand-document', {
+      body: { knowledgeId: id, storagePath, documentName },
+    });
+    if (error) throw error;
+    qc.invalidateQueries({ queryKey: ['kb-docs', userId] });
+  };
+
   const deleteKbDoc = async (id: string, storagePath: string | null) => {
     if (storagePath) await supabase.storage.from('knowledge').remove([storagePath]);
     await supabase.from('strategy_knowledge').delete().eq('id', id);
@@ -228,6 +237,7 @@ export function useStrategyData() {
     uploading,
     uploadKbDoc,
     deleteKbDoc,
+    reprocessDoc,
     fillPlaybookFromKb,
     fillingPlaybook,
     benchmarks: benchmarkQuery.data ?? [],

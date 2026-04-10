@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { BookOpen, PlusCircle, FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { BookOpen, PlusCircle, FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KbDoc } from '@/features/estrategia/useStrategyData';
 
@@ -22,14 +22,28 @@ interface Props {
   uploading: boolean;
   onUpload: (file: File, docType: 'knowledge' | 'reference') => Promise<void>;
   onDelete: (id: string, storagePath: string | null) => Promise<void>;
+  onReprocess: (id: string, storagePath: string, documentName: string) => Promise<void>;
   onFillPlaybook: () => Promise<void>;
   fillingPlaybook: boolean;
 }
 
-export default function KnowledgeBaseSection({ docs, loading, uploading, onUpload, onDelete, onFillPlaybook, fillingPlaybook }: Props) {
+export default function KnowledgeBaseSection({ docs, loading, uploading, onUpload, onDelete, onReprocess, onFillPlaybook, fillingPlaybook }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const doneCount = docs.filter(d => d.status === 'done').length;
-  const kbDocs = docs.filter(d => d.doc_type === 'knowledge');
+  const kbDocs = docs.filter(d => d.doc_type === 'knowledge' || !d.doc_type);
+
+  const handleReprocess = async (doc: KbDoc) => {
+    if (!doc.document_url) return;
+    setProcessingIds(prev => new Set(prev).add(doc.id));
+    try {
+      await onReprocess(doc.id, doc.document_url, doc.document_name);
+    } finally {
+      setProcessingIds(prev => { const s = new Set(prev); s.delete(doc.id); return s; });
+    }
+  };
+
+  const pendingDocs = kbDocs.filter(d => d.status === 'pending' || d.status === 'error');
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -114,9 +128,18 @@ export default function KnowledgeBaseSection({ docs, loading, uploading, onUploa
                   </p>
                 </div>
                 <span className={cn('flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold shrink-0', s.color)}>
-                  <StatusIcon className={cn('w-3 h-3', doc.status === 'processing' && 'animate-spin')} />
-                  {s.label}
+                  <StatusIcon className={cn('w-3 h-3', (doc.status === 'processing' || processingIds.has(doc.id)) && 'animate-spin')} />
+                  {processingIds.has(doc.id) ? 'Processando...' : s.label}
                 </span>
+                {(doc.status === 'pending' || doc.status === 'error') && !processingIds.has(doc.id) && (
+                  <button
+                    onClick={() => handleReprocess(doc)}
+                    title="Iniciar análise"
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-brand bg-brand/10 hover:bg-brand/20 transition-colors shrink-0"
+                  >
+                    <Play className="w-2.5 h-2.5" /> Processar
+                  </button>
+                )}
                 <button
                   onClick={() => onDelete(doc.id, doc.document_url)}
                   className="text-text-muted hover:text-danger transition-colors shrink-0"
@@ -127,6 +150,17 @@ export default function KnowledgeBaseSection({ docs, loading, uploading, onUploa
             );
           })}
         </div>
+      )}
+
+      {/* Process all pending */}
+      {pendingDocs.length > 0 && (
+        <button
+          onClick={() => pendingDocs.forEach(d => d.document_url && handleReprocess(d))}
+          className="w-full flex items-center justify-center gap-2 rounded-lg border border-amber-400/30 bg-amber-400/5 px-4 py-2 text-xs font-bold text-amber-400 hover:bg-amber-400/10 transition-colors"
+        >
+          <Play className="h-3.5 w-3.5" />
+          Processar {pendingDocs.length} documento{pendingDocs.length > 1 ? 's' : ''} pendente{pendingDocs.length > 1 ? 's' : ''}
+        </button>
       )}
 
       {/* Fill playbook button */}

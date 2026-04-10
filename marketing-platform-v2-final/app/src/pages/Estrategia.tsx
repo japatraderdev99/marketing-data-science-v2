@@ -25,7 +25,7 @@ function ScorecardCard({
 
 export default function Estrategia() {
   const {
-    kbDocs, kbLoading, uploading, uploadKbDoc, deleteKbDoc, fillPlaybookFromKb, fillingPlaybook,
+    kbDocs, kbLoading, uploading, uploadKbDoc, deleteKbDoc, reprocessDoc, fillPlaybookFromKb, fillingPlaybook,
     benchmarks, benchmarksLoading, uploadBenchmark, deleteBenchmark,
     metafields, extractingMeta, fillingMeta, extractMetafields, fillMetafieldsFromKb,
     scorecard,
@@ -96,6 +96,7 @@ export default function Estrategia() {
         uploading={uploading}
         onUpload={uploadKbDoc}
         onDelete={deleteKbDoc}
+        onReprocess={reprocessDoc}
         onFillPlaybook={fillPlaybookFromKb}
         fillingPlaybook={fillingPlaybook}
       />
