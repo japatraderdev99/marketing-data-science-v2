@@ -6,14 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Primary: Gemini 3.1 Flash Image Preview via OpenRouter chat/completions
-// Note: modalities:["image"] is REQUIRED — without it the model returns text, not image data
-// The image is returned in message.images[0].image_url.url (NOT in message.content)
-const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
-const IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
-
-// Fallback: Gemini image generation via Google AI Studio
-const GEMINI_IMAGE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent";
+// === MODELOS (ordem de prioridade) ===
+// 1. Imagen 4 via Google AI (melhor qualidade fotorrealista)
+const IMAGEN4_URL = "https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict";
+// 2. Gemini 3 Pro Image via Google AI (fallback Google)
+const GEMINI3_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent";
+// 3. OpenRouter (fallback final)
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODEL = "google/gemini-3.1-flash-image-preview";
 
 async function getUserId(req: Request): Promise<string | null> {
   try {
@@ -31,10 +31,9 @@ async function translatePrompt(imagePrompt: string, userId: string | null): Prom
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SRK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const INTERNAL_SECRET = Deno.env.get("INTERNAL_SECRET") || SUPABASE_SRK;
     const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-router`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${INTERNAL_SECRET}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_SRK}` },
       body: JSON.stringify({
         task_type: "suggest",
         messages: [
@@ -52,8 +51,56 @@ async function translatePrompt(imagePrompt: string, userId: string | null): Prom
   } catch { return imagePrompt; }
 }
 
+/** Primary: Imagen 4 via Google AI (:predict, formato Vertex) */
+async function generateWithImagen4(prompt: string, apiKey: string): Promise<string | null> {
+  const res = await fetch(`${IMAGEN4_URL}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: { sampleCount: 1, aspectRatio: "1:1" },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    console.error("Imagen4 error:", res.status, err.slice(0, 200));
+    return null;
+  }
+  const data = await res.json();
+  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+  const mime = data.predictions?.[0]?.mimeType || "image/png";
+  if (!b64) { console.error("Imagen4: no bytesBase64Encoded"); return null; }
+  return `data:${mime};base64,${b64}`;
+}
+
+/** Fallback 1: Gemini 3 Pro Image via Google AI (:generateContent) */
+async function generateWithGemini3Pro(prompt: string, apiKey: string): Promise<string | null> {
+  const res = await fetch(`${GEMINI3_URL}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    console.error("Gemini3Pro error:", res.status, err.slice(0, 200));
+    return null;
+  }
+  const data = await res.json();
+  const parts = data.candidates?.[0]?.content?.parts as Array<{ inlineData?: { data: string; mimeType: string } }> | undefined;
+  if (!parts) { console.error("Gemini3Pro: no candidates"); return null; }
+  for (const part of parts) {
+    if (part.inlineData?.data) return `data:${part.inlineData.mimeType || "image/jpeg"};base64,${part.inlineData.data}`;
+  }
+  console.error("Gemini3Pro: no inlineData");
+  return null;
+}
+
+/** Fallback 2: OpenRouter (gemini-3.1-flash-image-preview) */
 async function generateWithOpenRouter(prompt: string, apiKey: string): Promise<string | null> {
-  const res = await fetch(OPENROUTER_CHAT_URL, {
+  const res = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -62,41 +109,33 @@ async function generateWithOpenRouter(prompt: string, apiKey: string): Promise<s
       "X-Title": "DQEF Studio",
     },
     body: JSON.stringify({
-      model: IMAGE_MODEL,
+      model: OPENROUTER_MODEL,
       stream: false,
       modalities: ["image"],
       messages: [{ role: "user", content: prompt }],
     }),
   });
-
   if (!res.ok) {
     const err = await res.text().catch(() => "");
-    console.error("OpenRouter error:", res.status, err.slice(0, 300));
+    console.error("OpenRouter error:", res.status, err.slice(0, 200));
     return null;
   }
-
   let data: Record<string, unknown>;
-  try {
-    data = await res.json();
-  } catch (e) {
-    console.error("OpenRouter JSON parse error:", e);
-    return null;
-  }
+  try { data = await res.json(); } catch { return null; }
 
   const choice = (data.choices as Record<string, unknown>[])?.[0];
   const message = choice?.message as Record<string, unknown> | undefined;
 
-  // OpenRouter returns Gemini image in message.images[0].image_url.url
+  // OpenRouter retorna imagem em message.images[0].image_url.url
   const images = message?.images as Array<Record<string, unknown>> | undefined;
   if (Array.isArray(images) && images.length > 0) {
     const img = images[0];
-    const imageUrlObj = img.image_url as { url?: string } | undefined;
-    if (imageUrlObj?.url) return imageUrlObj.url;
+    const urlObj = img.image_url as { url?: string } | undefined;
+    if (urlObj?.url) return urlObj.url;
     if (typeof img.url === "string") return img.url;
     if (typeof img.b64_json === "string") return `data:image/png;base64,${img.b64_json}`;
   }
-
-  // Fallback: check content field (older response format)
+  // Fallback: content field
   const content = message?.content;
   if (typeof content === "string" && content.startsWith("data:image/")) return content;
   if (Array.isArray(content)) {
@@ -107,35 +146,7 @@ async function generateWithOpenRouter(prompt: string, apiKey: string): Promise<s
       if (inlineData?.data) return `data:${inlineData.mimeType || "image/jpeg"};base64,${inlineData.data}`;
     }
   }
-
   console.error("OpenRouter: no image in response, finish_reason:", choice?.finish_reason);
-  return null;
-}
-
-// Fallback: Gemini image generation via Google AI Studio
-async function generateWithGemini(prompt: string, apiKey: string): Promise<string | null> {
-  const res = await fetch(`${GEMINI_IMAGE_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => "");
-    console.error("Gemini error:", res.status, err.slice(0, 300));
-    return null;
-  }
-  const data = await res.json();
-  const parts = data.candidates?.[0]?.content?.parts as Array<{ inlineData?: { data: string; mimeType: string } }> | undefined;
-  if (!parts) { console.error("Gemini: no candidates"); return null; }
-  for (const part of parts) {
-    if (part.inlineData?.data) {
-      return `data:${part.inlineData.mimeType || "image/jpeg"};base64,${part.inlineData.data}`;
-    }
-  }
-  console.error("Gemini: no inlineData in parts");
   return null;
 }
 
@@ -151,34 +162,43 @@ serve(async (req) => {
     }
 
     const userId = await getUserId(req);
-    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
 
-    if (!openrouterKey && !geminiKey) throw new Error("Nenhuma API key configurada");
+    if (!geminiKey && !openrouterKey) throw new Error("Nenhuma API key configurada");
 
     let finalPrompt = imagePrompt;
     if (translateFirst) finalPrompt = await translatePrompt(imagePrompt, userId);
-
-    const styledPrompt = `${finalPrompt}. Documentary photography, authentic Brazilian work environment, natural lighting, candid, photorealistic, high quality`;
+    const styledPrompt = `${finalPrompt}. Documentary photography, authentic Brazilian professional environment, natural lighting, candid, photorealistic, high quality, no text, no logos`;
 
     let imageDataUrl: string | null = null;
-    let modelUsed = IMAGE_MODEL;
+    let modelUsed = "";
 
-    if (openrouterKey) {
-      imageDataUrl = await generateWithOpenRouter(styledPrompt, openrouterKey);
+    // 1. Imagen 4 (melhor qualidade)
+    if (geminiKey) {
+      imageDataUrl = await generateWithImagen4(styledPrompt, geminiKey);
+      if (imageDataUrl) modelUsed = "imagen-4.0-generate-001";
     }
 
+    // 2. Gemini 3 Pro Image (fallback Google)
     if (!imageDataUrl && geminiKey) {
-      modelUsed = "gemini-2.0-flash-exp-image-generation";
-      imageDataUrl = await generateWithGemini(styledPrompt, geminiKey);
+      imageDataUrl = await generateWithGemini3Pro(styledPrompt, geminiKey);
+      if (imageDataUrl) modelUsed = "gemini-3-pro-image-preview";
     }
 
-    if (userId) {
+    // 3. OpenRouter (fallback final)
+    if (!imageDataUrl && openrouterKey) {
+      imageDataUrl = await generateWithOpenRouter(styledPrompt, openrouterKey);
+      if (imageDataUrl) modelUsed = OPENROUTER_MODEL;
+    }
+
+    if (userId && modelUsed) {
       const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       supabase.from("ai_usage_log").insert({
         user_id: userId, function_name: "generate-slide-image", task_type: "image",
-        model_used: modelUsed, provider: modelUsed.includes("gemini") ? "google" : "openrouter",
-        tokens_input: 0, tokens_output: 0, cost_estimate: 0, latency_ms: 0, success: !!imageDataUrl,
+        model_used: modelUsed,
+        provider: modelUsed.includes("openrouter") || modelUsed.includes("gemini-3.1") ? "openrouter" : "google",
+        tokens_input: 0, tokens_output: 0, cost_estimate: 0, latency_ms: 0, success: true,
       }).then(({ error }) => { if (error) console.error("Log error:", error); });
     }
 
