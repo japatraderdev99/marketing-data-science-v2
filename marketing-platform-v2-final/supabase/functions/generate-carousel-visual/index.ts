@@ -64,10 +64,11 @@ TIPOS DE SLIDE:
 - cta: Ação + link na bio. layout: 'cta-clean'
 
 IMAGE PROMPTS (em inglês, mín 80 palavras):
-- Sujeito: prestador de serviço autônomo brasileiro, 30-50 anos, mãos calejadas
-- Variar roupas entre slides (NUNCA polo azul padrão)
+- Sujeito: profissional liberal autônomo brasileiro, 30-50 anos — diverso em área (consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta). NÃO restringir a trabalhos braçais
+- Vestimenta e ambiente condizentes com a profissão (home office, estúdio, escritório compartilhado, clínica, ateliê — não apenas ambientes de obra)
+- Variar roupas e perfil profissional entre slides (NUNCA polo azul genérico, roupas de trabalho sujas)
 - Estilo: documentary truth, raw authenticity, natural light
-- PROIBIDO: modelos jovens, ambientes corporativos, cenários de estúdio
+- PROIBIDO: estereótipos raciais ou socioeconômicos, ambientes de pobreza, roupas sujas, cenários de favela, modelos posando artificialmente, cenários de estúdio
 
 JSON EXATO:
 {

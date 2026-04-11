@@ -76,7 +76,8 @@ LAYOUTS (escolha o mais impactante por slide):
 - cta: centrado com pill "pronto. resolvido." — slide final
 
 IMAGE PROMPTS: inglês, mín 60 palavras, estilo documentário.
-Personagem: autônomo brasileiro 30-50 anos, mãos calejadas, ambiente real de trabalho.
+Personagem: profissional liberal autônomo brasileiro 30-50 anos — diverso em área (consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta). NÃO restringir a trabalhos braçais. Vestimenta e ambiente condizentes com a profissão.
+PROIBIDO: estereótipos raciais ou socioeconômicos, roupas sujas, ambientes de pobreza ou favela, generalizar como apenas eletricista/mecânico/diarista.
 Canon R5, 35mm f/2.8, luz natural, SEM TEXTO, SEM LOGOS na imagem.
 
 JSON:

@@ -40,12 +40,12 @@ Se chegar nesse limite, pare e divida antes de continuar.
 
 ## Contexto de negócio (DNA da marca)
 
-Plataforma voltada para prestadores de serviços autônomos brasileiros.
+Plataforma voltada para profissionais liberais autônomos brasileiros da economia flexível.
 
 - Cor primária: `#E8603C` (coral laranja)
 - Tipografia: Montserrat 900, UPPERCASE
 - Filosofia visual: "silêncio e verdade" — documentário + color grading publicitário
 - Slogan obrigatório no CTA: "pronto. resolvido."
 - Imagens: estilo documentário, sem fotos de stock corporativo
-- Personagem: brasileiro autônomo, 25-50 anos, mãos calejadas, ambiente de trabalho real
+- Personagem: profissional liberal autônomo brasileiro, 25-50 anos, qualquer área — consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta, entre muitos outros. NÃO apenas trabalhos braçais (eletricista, mecânico, diarista). Sem estereótipos de raça, classe ou pobreza. Ambiente real de trabalho condizente com a profissão.
 - Arco emocional: ANTES (problema) → DURANTE (expertise) → DEPOIS ("pronto. resolvido.")
