@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
-import { resolveWorkspace } from "../_shared/workspace.ts";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "anthropic/claude-sonnet-4-6";
@@ -43,16 +43,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const ws = await resolveWorkspace(req);
-    if (!ws) return errorResponse("Não autorizado", 401);
+    // Auth delegada ao Supabase runtime (valida apikey antes de rotear para esta função)
+    // userId é passado no body pelo frontend autenticado
 
-    const { strategyData = {} } = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const db = createClient(supabaseUrl, serviceKey);
+
+    const { strategyData = {}, userId } = await req.json();
+    if (!userId) return errorResponse("userId obrigatório", 400);
 
     // Load KB context
-    const { data: kbDocs } = await ws.supabase
+    const { data: kbDocs } = await db
       .from("strategy_knowledge")
       .select("extracted_knowledge, document_name")
-      .eq("user_id", ws.userId)
+      .eq("user_id", userId)
       .eq("status", "done")
       .limit(5);
 

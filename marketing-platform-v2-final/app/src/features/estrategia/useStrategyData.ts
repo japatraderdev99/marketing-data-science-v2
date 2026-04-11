@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlaybook, useSavePlaybook } from '@/hooks/useWorkspace';
@@ -132,7 +133,10 @@ export function useStrategyData() {
       // Fire-and-forget analysis
       supabase.functions.invoke('analyze-brand-document', {
         body: { knowledgeId: doc.id, storagePath: path, documentName: file.name },
-      }).then(() => qc.invalidateQueries({ queryKey: ['kb-docs', userId] }));
+      }).then(({ error: fnErr }) => {
+        if (fnErr) toast.error(`Análise de "${file.name}" falhou: ${fnErr.message}`);
+        qc.invalidateQueries({ queryKey: ['kb-docs', userId] });
+      });
     } finally {
       setUploading(false);
     }
@@ -140,10 +144,18 @@ export function useStrategyData() {
 
   const reprocessDoc = async (id: string, storagePath: string, documentName: string) => {
     await supabase.from('strategy_knowledge').update({ status: 'pending' }).eq('id', id);
-    const { error } = await supabase.functions.invoke('analyze-brand-document', {
+    const { data, error } = await supabase.functions.invoke('analyze-brand-document', {
       body: { knowledgeId: id, storagePath, documentName },
     });
-    if (error) throw error;
+    if (error) {
+      const msg = error?.message ?? 'Erro ao processar documento';
+      toast.error(`Falha ao analisar: ${msg}`);
+      throw error;
+    }
+    if (data?.error) {
+      toast.error(`Edge function error: ${data.error}`);
+      throw new Error(data.error);
+    }
     qc.invalidateQueries({ queryKey: ['kb-docs', userId] });
   };
 
@@ -185,15 +197,25 @@ export function useStrategyData() {
   };
 
   const fillPlaybookFromKb = async () => {
+    console.log('[fillPlaybook] userId:', userId, 'kj keys:', Object.keys(kj));
+    if (!userId) { toast.error('Usuário não autenticado'); return; }
     setFillingPlaybook(true);
     try {
       const { data, error } = await supabase.functions.invoke('fill-playbook-from-knowledge', {
-        body: { currentData: kj },
+        body: { currentData: kj, userId },
       });
-      if (error) throw error;
+      console.log('[fillPlaybook] data:', data, 'error:', error);
+      if (error) {
+        let msg = error?.message ?? 'Erro desconhecido';
+        try { const b = await (error as { context?: Response }).context?.json?.(); if (b?.error) msg = b.error; } catch { /* */ }
+        toast.error(`Erro: ${msg}`);
+        return;
+      }
+      if (data?.error) { toast.error(`Erro: ${data.error}`); return; }
       if (data?.playbook) {
         const { filledFields: _f, skippedFields: _s, ...fields } = data.playbook;
         savePlaybook.mutate({ type: 'copy', knowledgeJson: { ...kj, ...fields } });
+        toast.success('Playbook preenchido com sucesso!');
       }
     } finally {
       setFillingPlaybook(false);
@@ -204,11 +226,19 @@ export function useStrategyData() {
     setExtractingMeta(true);
     try {
       const { data, error } = await supabase.functions.invoke('extract-strategy-metafields', {
-        body: { strategyData: kj },
+        body: { strategyData: kj, userId },
       });
-      if (error) throw error;
+      if (error) {
+        toast.error(`Erro ao extrair meta-fields: ${error?.message ?? 'Erro desconhecido'}`);
+        return;
+      }
+      if (data?.error) {
+        toast.error(`IA: ${data.error}`);
+        return;
+      }
       if (data?.metafields) {
         savePlaybook.mutate({ type: 'copy', knowledgeJson: { ...kj, _metafields: data.metafields } });
+        toast.success('Meta-fields extraídos com sucesso!');
       }
     } finally {
       setExtractingMeta(false);
@@ -219,12 +249,20 @@ export function useStrategyData() {
     setFillingMeta(true);
     try {
       const { data, error } = await supabase.functions.invoke('fill-metafields-from-knowledge', {
-        body: { currentMetafields: metafields ?? {}, strategyData: kj },
+        body: { currentMetafields: metafields ?? {}, strategyData: kj, userId },
       });
-      if (error) throw error;
+      if (error) {
+        toast.error(`Erro ao enriquecer meta-fields: ${error?.message ?? 'Erro desconhecido'}`);
+        return;
+      }
+      if (data?.error) {
+        toast.error(`IA: ${data.error}`);
+        return;
+      }
       if (data?.metafields) {
         const { filledFromKB: _f, confidenceNotes: _c, ...meta } = data.metafields;
         savePlaybook.mutate({ type: 'copy', knowledgeJson: { ...kj, _metafields: meta } });
+        toast.success('Meta-fields enriquecidos com sucesso!');
       }
     } finally {
       setFillingMeta(false);

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { BookOpen, PlusCircle, FileText, Trash2, CheckCircle2, Clock, AlertCircle, Loader2, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KbDoc } from '@/features/estrategia/useStrategyData';
@@ -34,10 +35,16 @@ export default function KnowledgeBaseSection({ docs, loading, uploading, onUploa
   const kbDocs = docs.filter(d => d.doc_type === 'knowledge' || !d.doc_type);
 
   const handleReprocess = async (doc: KbDoc) => {
-    if (!doc.document_url) return;
+    if (!doc.document_url) {
+      toast.error('Documento sem URL — faça upload novamente');
+      return;
+    }
     setProcessingIds(prev => new Set(prev).add(doc.id));
     try {
       await onReprocess(doc.id, doc.document_url, doc.document_name);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erro desconhecido';
+      toast.error(`Falha ao processar "${doc.document_name}": ${msg}`);
     } finally {
       setProcessingIds(prev => { const s = new Set(prev); s.delete(doc.id); return s; });
     }

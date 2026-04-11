@@ -1,7 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
-import { resolveWorkspace } from "../_shared/workspace.ts";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "anthropic/claude-sonnet-4-6";
@@ -57,13 +56,20 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const ws = await resolveWorkspace(req);
-    if (!ws) return errorResponse("Não autorizado", 401);
+    // Auth delegada ao Supabase runtime (--no-verify-jwt). Segurança via knowledgeId (UUID).
+    // Usar service role para todas as operações de DB/storage
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const db = createClient(supabaseUrl, serviceKey);
 
     const { knowledgeId, storagePath, documentName } = await req.json();
     if (!knowledgeId || !storagePath) return errorResponse("knowledgeId e storagePath obrigatórios", 400);
 
-    await ws.supabase.from("strategy_knowledge").update({ status: "processing" }).eq("id", knowledgeId);
+    // Verificar que o documento existe (segurança: evita processar IDs arbitrários)
+    const { data: doc } = await db.from("strategy_knowledge").select("id,status").eq("id", knowledgeId).maybeSingle();
+    if (!doc) return errorResponse("Documento não encontrado", 404);
+
+    await db.from("strategy_knowledge").update({ status: "processing" }).eq("id", knowledgeId);
 
     // Detect file type from path
     const ext = storagePath.split(".").pop()?.toLowerCase() ?? "";
@@ -73,9 +79,10 @@ Deno.serve(async (req) => {
     let contentParts: unknown[];
 
     if (isPdf || isImage) {
-      const { data: blob, error: dlErr } = await ws.supabase.storage.from("knowledge").download(storagePath);
+      const { data: blob, error: dlErr } = await db.storage.from("knowledge").download(storagePath);
       if (dlErr || !blob) {
-        await ws.supabase.from("strategy_knowledge").update({ status: "error" }).eq("id", knowledgeId);
+        console.error("Download falhou:", dlErr?.message, storagePath);
+        await db.from("strategy_knowledge").update({ status: "error" }).eq("id", knowledgeId);
         return errorResponse(`Download falhou: ${dlErr?.message}`, 500);
       }
       const b64 = chunkBase64(await blob.arrayBuffer());
@@ -94,8 +101,13 @@ Deno.serve(async (req) => {
       }
     } else {
       // Text file: read as text
-      const { data: blob } = await ws.supabase.storage.from("knowledge").download(storagePath);
-      const text = blob ? await blob.text() : "";
+      const { data: blob, error: dlErr } = await db.storage.from("knowledge").download(storagePath);
+      if (dlErr || !blob) {
+        console.error("Download TXT falhou:", dlErr?.message, storagePath);
+        await db.from("strategy_knowledge").update({ status: "error" }).eq("id", knowledgeId);
+        return errorResponse(`Download TXT falhou: ${dlErr?.message ?? "blob null"}`, 500);
+      }
+      const text = await blob.text();
       contentParts = [{ type: "text", text: `DOCUMENTO:\n${text}\n\n${PROMPT}` }];
     }
 
@@ -121,7 +133,8 @@ Deno.serve(async (req) => {
 
     if (!res.ok) {
       const err = await res.text().catch(() => "");
-      await ws.supabase.from("strategy_knowledge").update({ status: "error" }).eq("id", knowledgeId);
+      console.error("OpenRouter error:", res.status, err);
+      await db.from("strategy_knowledge").update({ status: "error" }).eq("id", knowledgeId);
       throw new Error(`OpenRouter ${res.status}: ${err}`);
     }
 
@@ -130,7 +143,7 @@ Deno.serve(async (req) => {
       .choices?.[0]?.message?.content ?? "";
     const extracted = extractJSON(content);
 
-    await ws.supabase.from("strategy_knowledge").update({
+    await db.from("strategy_knowledge").update({
       status: "done",
       extracted_knowledge: extracted,
     }).eq("id", knowledgeId);

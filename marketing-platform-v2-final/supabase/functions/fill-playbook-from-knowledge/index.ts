@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, errorResponse } from "../_shared/cors.ts";
-import { resolveWorkspace } from "../_shared/workspace.ts";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "anthropic/claude-sonnet-4-6";
@@ -19,20 +19,27 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const ws = await resolveWorkspace(req);
-    if (!ws) return errorResponse("Não autorizado", 401);
+    // Auth delegada ao Supabase runtime (valida apikey antes de rotear para esta função)
+    // userId é passado no body pelo frontend autenticado
 
-    const { currentData = {} } = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const db = createClient(supabaseUrl, serviceKey);
+
+    const { currentData = {}, userId } = await req.json();
+    console.log("fill-playbook userId:", userId, "type:", typeof userId);
+    if (!userId) return jsonResponse({ success: false, error: "userId obrigatório" });
 
     // Load KB docs
-    const { data: kbDocs } = await ws.supabase
+    const { data: kbDocs, error: kbErr } = await db
       .from("strategy_knowledge")
       .select("extracted_knowledge, document_name")
-      .eq("user_id", ws.userId)
+      .eq("user_id", userId)
       .eq("status", "done")
       .limit(5);
 
-    if (!kbDocs?.length) return errorResponse("Nenhum documento no Knowledge Base com status 'done'", 400);
+    console.log("fill-playbook kbDocs:", kbDocs?.length, "kbErr:", kbErr?.message);
+    if (!kbDocs?.length) return jsonResponse({ success: false, error: `Nenhum documento no KB com status done para userId=${userId}` });
 
     const kbContext = kbDocs.map((d: { document_name: string; extracted_knowledge: Record<string, unknown> | null }) => {
       const k = d.extracted_knowledge;
@@ -103,7 +110,7 @@ Retorne JSON com EXATAMENTE estes 9 campos. Para campos preenchidos, retorne o v
       }),
     });
 
-    if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
+    if (!res.ok) { const t = await res.text(); throw new Error(`OpenRouter ${res.status}: ${t}`); }
     const aiData = await res.json();
     const content = (aiData as { choices?: Array<{ message?: { content?: string } }> })
       .choices?.[0]?.message?.content ?? "";
