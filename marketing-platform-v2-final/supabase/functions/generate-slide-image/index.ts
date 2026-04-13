@@ -169,7 +169,7 @@ serve(async (req) => {
 
     let finalPrompt = imagePrompt;
     if (translateFirst) finalPrompt = await translatePrompt(imagePrompt, userId);
-    const styledPrompt = `${finalPrompt}. Documentary photography style, candid and authentic. The subject is a Brazilian independent professional in their real work environment — could be any trade or profession. Clothing and setting must match the specific profession shown. Natural lighting, photorealistic, high quality. No text, no logos, no watermarks. Avoid racial stereotypes and avoid defaulting to a single profession type — represent the actual diversity of Brazilian autonomous workers.`;
+    const styledPrompt = `${finalPrompt}. Documentary photography style, candid and authentic. The subject is a Brazilian independent professional actively working — shown in their real workplace (workshop, office, kitchen, studio, construction site, clinic, or similar). Clothing appropriate to the profession and the act of working. Natural lighting, photorealistic, high quality. No text, no logos, no watermarks. The scene must show work in progress, not leisure — dignified, honest, real. Avoid class stereotypes: no flip-flops or tank tops unless the profession demands it, no plastic chairs outside bars, no residential stoops, no poverty aesthetics.`;
 
     let imageDataUrl: string | null = null;
     let modelUsed = "";

@@ -47,12 +47,13 @@ REGRAS:
 - Subtexto: 1-2 linhas de suporte
 - CTA: curto e direto
 - Image prompts em inglês, mín 60 palavras, estilo documentário fotográfico
-- OBRIGATÓRIO no imagePrompt: nomear explicitamente a profissão do sujeito e o ambiente de trabalho condizente
-- Sujeito: autônomo brasileiro, 25-50 anos — VARIAR gênero, fenótipo e área de atuação entre variações. A plataforma atende QUALQUER profissional autônomo: consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta, eletricista, encanador, mecânico, cozinheiro, costureira, personal trainer, professor — sem restrição de categoria
-- A escolha da profissão deve ser DIVERSA entre as variações — não repetir sempre o mesmo tipo
-- Vestimenta e ambiente condizentes com a profissão específica do personagem
-- NÃO generalizar: se o briefing não especifica uma profissão, distribuir as variações entre profissões diferentes (mix de perfis liberais, técnicos e especializados)
-- Estilo: documentário autêntico, sem fotos de stock, sem poses artificiais, sem estereótipos raciais ou de classe
+- REGRA FUNDAMENTAL: a cena SEMPRE mostra o profissional TRABALHANDO ou em seu AMBIENTE DE TRABALHO — nunca em lazer, nunca em casa, nunca em bar, nunca sentado na calçada
+- OBRIGATÓRIO no imagePrompt: nomear a profissão + mostrar a ação de trabalho + o ambiente profissional (ex: "a Brazilian electrician in her 30s installing a circuit panel in a clean residential apartment", "a Brazilian chef plating food in a professional kitchen")
+- Sujeito: autônomo brasileiro, 25-50 anos — VARIAR gênero, fenótipo e profissão entre variações. Atende qualquer autônomo: consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta, eletricista, mecânico, cozinheiro, costureira, personal trainer, professor
+- Vestimenta: roupas de trabalho adequadas à profissão — um mecânico usa macacão limpo, uma consultora usa roupa social, um chef usa jaleco. NUNCA: regata, chinelo, roupa de lazer
+- Ambiente: local de trabalho real — oficina, escritório, cozinha, obra em andamento, estúdio, consultório. NUNCA: bar de bairro, calçada residencial, cadeira de plástico, ambiente de lazer
+- Documentário = autêntico e honesto, NÃO = pobreza, NÃO = aspiracional fake. O foco é a dignidade do trabalho.
+- Diversificar profissão, gênero, etnia e tipo de ambiente entre as variações
 
 JSON:
 {
