@@ -169,7 +169,7 @@ serve(async (req) => {
 
     let finalPrompt = imagePrompt;
     if (translateFirst) finalPrompt = await translatePrompt(imagePrompt, userId);
-    const styledPrompt = `${finalPrompt}. Documentary photography style, candid and authentic. The person depicted is a well-dressed Brazilian liberal professional (lawyer, consultant, designer, architect, therapist, accountant, coach, nutritionist, or similar knowledge worker) in a proper professional environment (modern office, studio, co-working space, clinic, or atelier). Professional clothing appropriate for an office or studio setting. Natural lighting, photorealistic, high quality. No text, no logos, no watermarks. NOT: electrician, plumber, construction worker, cleaner, maid, delivery worker, manual laborer. NOT: favela, poverty, dirty clothes, stereotyped environments.`;
+    const styledPrompt = `${finalPrompt}. Documentary photography style, candid and authentic. The subject is a Brazilian independent professional in their real work environment — could be any trade or profession. Clothing and setting must match the specific profession shown. Natural lighting, photorealistic, high quality. No text, no logos, no watermarks. Avoid racial stereotypes and avoid defaulting to a single profession type — represent the actual diversity of Brazilian autonomous workers.`;
 
     let imageDataUrl: string | null = null;
     let modelUsed = "";

@@ -47,12 +47,12 @@ REGRAS:
 - Subtexto: 1-2 linhas de suporte
 - CTA: curto e direto
 - Image prompts em inglês, mín 60 palavras, estilo documentário fotográfico
-- OBRIGATÓRIO no imagePrompt: nomear explicitamente a profissão (ex: "a Brazilian female architect reviewing blueprints") e o ambiente (ex: "in a modern design studio with large windows")
-- Sujeito: profissional liberal autônomo brasileiro, 25-50 anos — VARIAR gênero e fenótipo brasileiro entre variações. Profissões: consultor(a), designer, advogado(a), coach, nutricionista, contador(a), fotógrafo(a), arquiteto(a), terapeuta, médico(a), professor(a), engenheiro(a), entre outros profissionais de conhecimento
-- Vestimenta: roupas condizentes com a profissão (roupa profissional casual, blazer, roupas de trabalho de escritório — NUNCA roupas sujas ou de trabalho manual)
-- Ambiente: home office moderno, coworking, escritório compartilhado, estúdio, clínica, ateliê — NUNCA favela, obra, ambiente de pobreza
-- TERMINANTEMENTE PROIBIDO: eletricista, encanador, pedreiro, mecânico, diarista, faxineira, gari, entregador. Estereótipos raciais. Ambientes de pobreza ou precariedade. Roupas sujas ou rasgadas.
-- Variar profissão, gênero, ambiente e composição entre as variações
+- OBRIGATÓRIO no imagePrompt: nomear explicitamente a profissão do sujeito e o ambiente de trabalho condizente
+- Sujeito: autônomo brasileiro, 25-50 anos — VARIAR gênero, fenótipo e área de atuação entre variações. A plataforma atende QUALQUER profissional autônomo: consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta, eletricista, encanador, mecânico, cozinheiro, costureira, personal trainer, professor — sem restrição de categoria
+- A escolha da profissão deve ser DIVERSA entre as variações — não repetir sempre o mesmo tipo
+- Vestimenta e ambiente condizentes com a profissão específica do personagem
+- NÃO generalizar: se o briefing não especifica uma profissão, distribuir as variações entre profissões diferentes (mix de perfis liberais, técnicos e especializados)
+- Estilo: documentário autêntico, sem fotos de stock, sem poses artificiais, sem estereótipos raciais ou de classe
 
 JSON:
 {
