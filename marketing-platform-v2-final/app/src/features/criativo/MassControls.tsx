@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { CheckSquare, Square, Download, Trash2 } from 'lucide-react';
-import type { SlideSettings, HighlightStyle } from '@/types';
+import type { SlideSettings, CarouselThemeId } from '@/types';
 import { AdjSlider } from '@/features/carousel/components/AdjSlider';
-import { HIGHLIGHT_STYLES, SHAPE_STYLES, FONT_OPTIONS } from '@/features/carousel/constants';
+import { HIGHLIGHT_STYLES, SHAPE_STYLES, FONT_OPTIONS, CAROUSEL_THEMES } from '@/features/carousel/constants';
 import { cn } from '@/lib/utils';
 
 interface MassControlsProps {
@@ -12,6 +12,8 @@ interface MassControlsProps {
   onDeselectAll: () => void;
   onApplyToAll: (updates: Partial<SlideSettings>) => void;
   onApplyCtaToAll: (cta: string) => void;
+  onChangeTheme: (id: CarouselThemeId) => void;
+  currentThemeId: CarouselThemeId;
   onExportSelected: () => void;
   onDeleteSelected: () => void;
   isExporting: boolean;
@@ -20,8 +22,8 @@ interface MassControlsProps {
 
 export function MassControls({
   totalCount, selectedCount, onSelectAll, onDeselectAll,
-  onApplyToAll, onApplyCtaToAll, onExportSelected, onDeleteSelected,
-  isExporting, exportProgress,
+  onApplyToAll, onApplyCtaToAll, onChangeTheme, currentThemeId,
+  onExportSelected, onDeleteSelected, isExporting, exportProgress,
 }: MassControlsProps) {
   const [ctaText, setCtaText] = useState('');
   const [highlightWord, setHighlightWord] = useState('');
@@ -125,6 +127,27 @@ export function MassControls({
             {FONT_OPTIONS.slice(0, 4).map(f => (
               <button key={f} onClick={() => onApplyToAll({ fontFamily: f })} className="px-1.5 py-1 rounded text-[9px] border border-border text-text-muted hover:border-brand hover:text-brand transition-all" style={{ fontFamily: f }}>
                 {f.slice(0, 4)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tema */}
+        <div className="space-y-1">
+          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Tema</p>
+          <div className="flex gap-1">
+            {CAROUSEL_THEMES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => onChangeTheme(t.id as CarouselThemeId)}
+                title={t.label}
+                className={cn('flex items-center gap-1 px-1.5 py-1 rounded text-[9px] border transition-all',
+                  currentThemeId === t.id ? 'border-brand bg-brand/10 text-brand' : 'border-border text-text-muted hover:border-brand')}
+              >
+                <div className="flex gap-0.5">
+                  {t.previewSwatch.map((c, i) => <div key={i} className="w-2.5 h-2.5 rounded-full border border-white/10" style={{ backgroundColor: c }} />)}
+                </div>
+                <span>{t.label}</span>
               </button>
             ))}
           </div>

@@ -46,11 +46,13 @@ REGRAS:
 - Headlines: CAIXA ALTA, 3-7 palavras, máximo impacto
 - Subtexto: 1-2 linhas de suporte
 - CTA: curto e direto
-- Image prompts em inglês, mín 60 palavras, estilo documentário
-- Sujeito: profissional liberal autônomo brasileiro, 25-50 anos — diverso em área (consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta, entre outros). NÃO restringir a trabalhos braçais ou de classe operária
-- Vestimenta e ambiente condizentes com a profissão do personagem (ex: home office, estúdio, escritório compartilhado, clínica, ateliê)
-- PROIBIDO: fotos stock, modelos posando, estereótipos raciais ou de classe social, ambientes de pobreza, roupas sujas, generalizar como apenas eletricista/mecânico/diarista
-- Variar composição visual e perfil profissional entre variações
+- Image prompts em inglês, mín 60 palavras, estilo documentário fotográfico
+- OBRIGATÓRIO no imagePrompt: nomear explicitamente a profissão (ex: "a Brazilian female architect reviewing blueprints") e o ambiente (ex: "in a modern design studio with large windows")
+- Sujeito: profissional liberal autônomo brasileiro, 25-50 anos — VARIAR gênero e fenótipo brasileiro entre variações. Profissões: consultor(a), designer, advogado(a), coach, nutricionista, contador(a), fotógrafo(a), arquiteto(a), terapeuta, médico(a), professor(a), engenheiro(a), entre outros profissionais de conhecimento
+- Vestimenta: roupas condizentes com a profissão (roupa profissional casual, blazer, roupas de trabalho de escritório — NUNCA roupas sujas ou de trabalho manual)
+- Ambiente: home office moderno, coworking, escritório compartilhado, estúdio, clínica, ateliê — NUNCA favela, obra, ambiente de pobreza
+- TERMINANTEMENTE PROIBIDO: eletricista, encanador, pedreiro, mecânico, diarista, faxineira, gari, entregador. Estereótipos raciais. Ambientes de pobreza ou precariedade. Roupas sujas ou rasgadas.
+- Variar profissão, gênero, ambiente e composição entre as variações
 
 JSON:
 {

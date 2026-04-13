@@ -3,7 +3,8 @@ import { toPng } from 'html-to-image';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { Download, SlidersHorizontal, Copy, Trash2, Pencil, Check, ImagePlus, ImageOff, Loader2, RefreshCw } from 'lucide-react';
-import type { BatchVariation, CarouselTheme, SlideSettings, SlideOutput } from '@/types';
+import type { BatchVariation, CarouselTheme, CarouselThemeId, SlideSettings, SlideOutput } from '@/types';
+import { CAROUSEL_THEMES } from '@/features/carousel/constants';
 import { MediaPickerModal } from './components/MediaPickerModal';
 import { DEFAULT_SLIDE_SETTINGS } from '@/types';
 import { SlidePreview } from '@/features/carousel/components/SlidePreview';
@@ -20,6 +21,7 @@ interface VariationCardProps {
   onToggleSelect: () => void;
   onUpdateVariation: (updates: Partial<BatchVariation>) => void;
   onUpdateSettings: (updates: Partial<SlideSettings>) => void;
+  onChangeTheme: (id: CarouselThemeId) => void;
   onRemove: () => void;
   nativeWidth?: number;
   nativeHeight?: number;
@@ -27,7 +29,7 @@ interface VariationCardProps {
 
 export function VariationCard({
   variation, theme, settings, isSelected, onToggleSelect,
-  onUpdateVariation, onUpdateSettings, onRemove, nativeWidth = 1080, nativeHeight = 1350,
+  onUpdateVariation, onUpdateSettings, onChangeTheme, onRemove, nativeWidth = 1080, nativeHeight = 1350,
 }: VariationCardProps) {
   const [showControls, setShowControls] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -200,7 +202,27 @@ export function VariationCard({
 
       {/* Controls panel */}
       {showControls && (
-        <div className="px-2 py-2 border-t border-border/50 max-h-80 overflow-y-auto">
+        <div className="px-2 py-2 border-t border-border/50 max-h-80 overflow-y-auto space-y-2">
+          {/* Per-card theme selector */}
+          <div>
+            <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">Tema</p>
+            <div className="flex gap-1">
+              {CAROUSEL_THEMES.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => onChangeTheme(t.id as CarouselThemeId)}
+                  title={t.label}
+                  className={cn('flex items-center gap-1 px-1.5 py-1 rounded text-[9px] border transition-all',
+                    theme.id === t.id ? 'border-brand bg-brand/10 text-brand' : 'border-border text-text-muted hover:border-brand')}
+                >
+                  <div className="flex gap-0.5">
+                    {t.previewSwatch.map((c, i) => <div key={i} className="w-2.5 h-2.5 rounded-full border border-white/10" style={{ backgroundColor: c }} />)}
+                  </div>
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <SlideControls settings={settings} headline={variation.headline} onUpdate={onUpdateSettings} compact />
         </div>
       )}

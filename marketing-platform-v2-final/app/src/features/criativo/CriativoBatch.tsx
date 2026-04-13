@@ -42,6 +42,7 @@ export function CriativoBatch() {
   const [style, setStyle] = useState<VisualStyleId>('impact-direct');
   const [count, setCount] = useState(3);
   const [themeId, setThemeId] = useState<CarouselThemeId>('brand-orange');
+  const [themesMap, setThemesMap] = useState<Record<string, CarouselThemeId>>({});
   const [variations, setVariations] = useState<BatchVariation[]>([]);
   const [settingsMap, setSettingsMap] = useState<Record<string, SlideSettings>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -53,6 +54,8 @@ export function CriativoBatch() {
 
   const format = BATCH_FORMATS.find(f => f.id === formatId) ?? BATCH_FORMATS[0];
   const theme = CAROUSEL_THEMES.find(t => t.id === themeId) || CAROUSEL_THEMES[0];
+  const getThemeForVariation = (id: string) =>
+    CAROUSEL_THEMES.find(t => t.id === (themesMap[id] ?? themeId)) ?? CAROUSEL_THEMES[0];
   const saveDraft = useSaveDraft();
 
   const getSettings = (id: string): SlideSettings => settingsMap[id] || { ...DEFAULT_SLIDE_SETTINGS };
@@ -61,7 +64,7 @@ export function CriativoBatch() {
   const toggleSelect = (id: string) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const handleGenerate = useCallback(async () => {
-    setIsGenerating(true); setError(null); setVariations([]); setSettingsMap({});
+    setIsGenerating(true); setError(null); setVariations([]); setSettingsMap({}); setThemesMap({});
     try {
       setProgress(`Gerando ${count} variações...`);
       const result = await generateCreativeBatch({
@@ -148,6 +151,11 @@ export function CriativoBatch() {
   const applyToAll = (updates: Partial<SlideSettings>) => {
     const targets = selected.size > 0 ? variations.filter(v => selected.has(v.id)) : variations;
     setSettingsMap(prev => { const next = { ...prev }; for (const v of targets) next[v.id] = { ...getSettings(v.id), ...updates }; return next; });
+  };
+
+  const applyThemeToAll = (tid: CarouselThemeId) => {
+    const targets = selected.size > 0 ? variations.filter(v => selected.has(v.id)) : variations;
+    setThemesMap(prev => { const next = { ...prev }; for (const v of targets) next[v.id] = tid; return next; });
   };
 
   const applyCtaToAll = (cta: string) => {
@@ -275,17 +283,19 @@ export function CriativoBatch() {
               onSelectAll={() => setSelected(new Set(variations.map(v => v.id)))}
               onDeselectAll={() => setSelected(new Set())}
               onApplyToAll={applyToAll} onApplyCtaToAll={applyCtaToAll}
+              onChangeTheme={applyThemeToAll} currentThemeId={themeId}
               onExportSelected={handleExportSelected} onDeleteSelected={deleteSelected}
               isExporting={exporting} exportProgress={exportProgress}
             />
             <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
               {variations.map(v => (
-                <VariationCard key={v.id} variation={v} theme={theme}
+                <VariationCard key={v.id} variation={v} theme={getThemeForVariation(v.id)}
                   settings={getSettings(v.id)} isSelected={selected.has(v.id)}
                   nativeWidth={format.width} nativeHeight={format.height}
                   onToggleSelect={() => toggleSelect(v.id)}
                   onUpdateVariation={updates => setVariations(prev => prev.map(x => x.id === v.id ? { ...x, ...updates } : x))}
                   onUpdateSettings={updates => updateSettings(v.id, updates)}
+                  onChangeTheme={tid => setThemesMap(prev => ({ ...prev, [v.id]: tid }))}
                   onRemove={() => { setVariations(prev => prev.filter(x => x.id !== v.id)); setSelected(prev => { const n = new Set(prev); n.delete(v.id); return n; }); }}
                 />
               ))}
