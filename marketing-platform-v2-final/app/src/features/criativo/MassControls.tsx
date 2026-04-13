@@ -47,8 +47,9 @@ export function MassControls({
       </div>
 
       {/* Sliders Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <AdjSlider label="Texto" value={1.0} min={0.5} max={2.0} step={0.1} onValueChange={(v) => onApplyToAll({ textScale: v })} />
+      <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+        <AdjSlider label="Headline" value={1.0} min={0.5} max={2.5} step={0.05} onValueChange={(v) => onApplyToAll({ headlineScale: v })} />
+        <AdjSlider label="Body" value={1.0} min={0.5} max={2.5} step={0.05} onValueChange={(v) => onApplyToAll({ subtextScale: v })} />
         <AdjSlider label="CTA" value={1.0} min={0.5} max={2.0} step={0.1} onValueChange={(v) => onApplyToAll({ ctaScale: v })} />
         <AdjSlider label="Pos X" value={6} min={2} max={80} step={1} display="—" onValueChange={(v) => onApplyToAll({ textPositionX: v })} />
         <AdjSlider label="Pos Y" value={70} min={15} max={95} step={1} display="—" onValueChange={(v) => onApplyToAll({ textPositionY: v })} />

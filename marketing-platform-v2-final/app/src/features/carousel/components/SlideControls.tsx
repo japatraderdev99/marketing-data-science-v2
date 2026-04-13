@@ -28,7 +28,8 @@ export function SlideControls({ settings, headline, onUpdate, compact }: SlideCo
       {/* Text Sliders */}
       <div className="space-y-2">
         <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Texto</p>
-        <AdjSlider label="Escala Texto" value={settings.textScale} min={0.5} max={2.0} step={0.1} onValueChange={(v) => onUpdate({ textScale: v })} />
+        <AdjSlider label="Headline" value={settings.headlineScale ?? settings.textScale} min={0.5} max={2.5} step={0.05} onValueChange={(v) => onUpdate({ headlineScale: v })} />
+        <AdjSlider label="Body" value={settings.subtextScale ?? settings.textScale} min={0.5} max={2.5} step={0.05} onValueChange={(v) => onUpdate({ subtextScale: v })} />
         <AdjSlider label="Escala CTA" value={settings.ctaScale} min={0.5} max={2.0} step={0.1} onValueChange={(v) => onUpdate({ ctaScale: v })} />
         <AdjSlider label="Posição X" value={settings.textPositionX} min={2} max={80} step={1} display={`${Math.round(settings.textPositionX)}%`} onValueChange={(v) => onUpdate({ textPositionX: v })} />
         <AdjSlider label="Posição Y" value={settings.textPositionY} min={15} max={95} step={1} display={`${Math.round(settings.textPositionY)}%`} onValueChange={(v) => onUpdate({ textPositionY: v })} />

@@ -36,9 +36,13 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
 
     // Design-size font values (at 1080px canvas — no * scale needed)
     const baseFontSize = slide.layout === 'number-dominant' ? 144 : 72;
-    const headlineSize = baseFontSize * s.textScale;
-    const subtextSize = 30 * s.textScale;
+    const headlineSize = baseFontSize * (s.headlineScale ?? s.textScale);
+    const subtextSize = 30 * (s.subtextScale ?? s.textScale);
     const ctaSize = 24 * s.ctaScale;
+
+    // Safe zone: bottom 250px (native) for Stories/Reels (ratio > 1.5)
+    const isStories = nh / nw > 1.5;
+    const safeZoneHeight = 250; // px on native canvas
 
     const hasCustomHighlight = s.highlightWords && s.highlightStyle !== 'none';
 
@@ -167,6 +171,25 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
               </div>
             )}
           </div>
+
+          {/* Safe zone overlay — Stories/Reels only, hidden on export */}
+          {!isExport && isStories && (
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              height: safeZoneHeight, zIndex: 30,
+              background: 'rgba(0,0,0,0.52)',
+              borderTop: '3px dashed rgba(255,180,0,0.75)',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: 'rgba(255,200,0,0.95)', letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'Montserrat, sans-serif' }}>
+                Zona do Botão de Ação
+              </span>
+              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter, sans-serif', letterSpacing: '0.04em' }}>
+                Mantenha o conteúdo acima desta linha
+              </span>
+            </div>
+          )}
 
           {/* Brand mark — orange icon on light bg, white logo on dark/orange bg */}
           {showWatermark && (

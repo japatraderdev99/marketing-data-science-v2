@@ -162,7 +162,9 @@ export type ShapeStyle = 'none' | 'pill' | 'box' | 'diagonal' | 'gradient-bar' |
 export type HighlightStyle = 'none' | 'color' | 'bold' | 'box';
 
 export interface SlideSettings {
-  textScale: number;
+  textScale: number;       // fallback global (mantido por compatibilidade)
+  headlineScale?: number;  // override individual da headline
+  subtextScale?: number;   // override individual do body
   ctaScale: number;
   textPositionX: number;
   textPositionY: number;
