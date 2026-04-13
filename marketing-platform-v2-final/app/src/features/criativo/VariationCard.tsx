@@ -20,11 +20,13 @@ interface VariationCardProps {
   onUpdateVariation: (updates: Partial<BatchVariation>) => void;
   onUpdateSettings: (updates: Partial<SlideSettings>) => void;
   onRemove: () => void;
+  nativeWidth?: number;
+  nativeHeight?: number;
 }
 
 export function VariationCard({
   variation, theme, settings, isSelected, onToggleSelect,
-  onUpdateVariation, onUpdateSettings, onRemove,
+  onUpdateVariation, onUpdateSettings, onRemove, nativeWidth = 1080, nativeHeight = 1350,
 }: VariationCardProps) {
   const [showControls, setShowControls] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -48,13 +50,14 @@ export function VariationCard({
       document.body.appendChild(div);
       const root = createRoot(div);
       flushSync(() => root.render(
-        <SlidePreview slide={slide} theme={theme} width={1080} height={1350}
+        <SlidePreview slide={slide} theme={theme} width={nativeWidth} height={nativeHeight}
+          nativeWidth={nativeWidth} nativeHeight={nativeHeight}
           settings={settings} imageUrl={variation.mediaUrl} isExport />
       ));
       await document.fonts.ready;
       await new Promise(r => setTimeout(r, 100));
       const dataUrl = await toPng(div.firstElementChild as HTMLElement, {
-        width: 1080, height: 1350, pixelRatio: 1,
+        width: nativeWidth, height: nativeHeight, pixelRatio: 1,
       });
       root.unmount();
       document.body.removeChild(div);
@@ -112,7 +115,7 @@ export function VariationCard({
 
       {/* Preview */}
       <div className={cn('relative', variation.status === 'error' && 'opacity-50')}>
-        <SlidePreview slide={slide} theme={theme} settings={settings} imageUrl={variation.mediaUrl} />
+        <SlidePreview slide={slide} theme={theme} settings={settings} imageUrl={variation.mediaUrl} nativeWidth={nativeWidth} nativeHeight={nativeHeight} />
         {variation.status === 'error' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl">
             <span className="text-xs text-red-400 font-medium">Erro na geração</span>

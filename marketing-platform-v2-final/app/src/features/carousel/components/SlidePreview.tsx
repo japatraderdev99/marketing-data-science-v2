@@ -21,12 +21,16 @@ interface SlidePreviewProps {
   showWatermark?: boolean;
   settings?: SlideSettings;
   isExport?: boolean;
+  nativeWidth?: number;
+  nativeHeight?: number;
 }
 
 export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
-  ({ slide, theme, width = 340, height = 425, imageUrl, showWatermark = true, settings, isExport = false }, ref) => {
+  ({ slide, theme, width = 340, height = 425, imageUrl, showWatermark = true, settings, isExport = false, nativeWidth, nativeHeight }, ref) => {
     const s = settings || DEFAULT_SLIDE_SETTINGS;
-    const previewScale = width / 1080;
+    const nw = nativeWidth ?? 1080;
+    const nh = nativeHeight ?? 1350;
+    const previewScale = width / nw;
     const typeLabel = TYPE_LABELS[slide.type] || slide.type.toUpperCase();
 
     // Design-size font values (at 1080px canvas — no * scale needed)
@@ -69,7 +73,7 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
         <div
           className="slide-export"
           style={{
-            width: 1080, height: 1350,
+            width: nw, height: nh,
             transform: `scale(${previewScale})`, transformOrigin: 'top left',
             position: 'absolute', top: 0, left: 0,
             background: theme.bg.startsWith('linear') ? theme.bg : undefined,

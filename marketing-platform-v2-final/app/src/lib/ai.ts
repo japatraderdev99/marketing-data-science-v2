@@ -121,3 +121,20 @@ export async function generateSlideImage(params: {
   if (data?.error) throw new Error(data.error);
   return data;
 }
+
+export async function generateSingleAd(params: {
+  briefing?: string;
+  format?: string;
+  angle?: string;
+  objective?: string;
+  persona?: string;
+  userId?: string;
+}) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const { data, error } = await supabase.functions.invoke('generate-single-ad', {
+    body: { ...params, userId: params.userId ?? session?.user?.id },
+  });
+  if (error) { console.error('[generate-single-ad]', error); throw new Error(await extractFunctionError(error)); }
+  if (data?.error) throw new Error(data.error);
+  return data as { slide: import('@/types').SlideOutput & { caption: string; hashtags: string[]; cta: string; copyRationale: string }; format: string };
+}
