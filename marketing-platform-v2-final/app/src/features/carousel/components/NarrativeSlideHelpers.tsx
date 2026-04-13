@@ -1,6 +1,7 @@
-import type { NarrativeThemeId } from '@/types';
+import type { NarrativeThemeId, HighlightStyle } from '@/types';
 import dqefIconOrange from '@/assets/dqef-icon-orange.png';
 import dqefLogoWhite from '@/assets/dqef-logo-white.png';
+import { renderHighlightedText } from './WordHighlight';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,23 @@ export function Body({ text, accent, color, size }: { text: string; accent: stri
       )}
     </p>
   );
+}
+
+// ── Headline renderer — Accent OR user highlight ──────────────────────────────
+
+export function HeadlineRenderer({
+  text, accentColor, headlineColor,
+  highlightWords, highlightStyle = 'none', highlightColor = '#E8603C',
+  isExport = false,
+}: {
+  text: string; accentColor: string; headlineColor: string;
+  highlightWords?: string; highlightStyle?: HighlightStyle; highlightColor?: string;
+  isExport?: boolean;
+}) {
+  if (highlightStyle !== 'none' && highlightWords) {
+    return renderHighlightedText(text, highlightWords, highlightStyle, headlineColor, highlightColor, isExport);
+  }
+  return <Accent text={text} color={accentColor} />;
 }
 
 // ── DQEF brand mark — real asset ─────────────────────────────────────────────

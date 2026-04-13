@@ -10,6 +10,8 @@ import { NarrativeSlidePreview } from './NarrativeSlidePreview';
 import type { NarrativeSlideSettings } from './NarrativeSlidePreview';
 import { SlideImageControls } from './SlideImageControls';
 import { AdjSlider } from './AdjSlider';
+import { WordSelector, HighlightStylePicker } from './WordHighlight';
+import type { HighlightStyle } from '@/types';
 import { TYPE_LABELS } from '../constants';
 
 // ── Type badge colors ─────────────────────────────────────────────────────────
@@ -261,6 +263,27 @@ Retorne APENAS JSON: { "headline": "NOVA HEADLINE", "bodyText": "Novo texto com 
             onChange={(e) => onUpdateSlide(slideIndex, { sourceLabel: e.target.value || null })}
             placeholder="Fonte (ex: IBGE, 2024)"
           />
+
+          {/* Word highlight */}
+          <div className="pt-1.5 border-t border-border/50 space-y-2">
+            <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Destaque na Headline</p>
+            <WordSelector
+              headline={slide.headline}
+              selectedWords={(settings.highlightWords || '').split('|').filter(Boolean)}
+              onToggleWord={(word) => {
+                const current = (settings.highlightWords || '').split('|').filter(Boolean);
+                const idx = current.findIndex(w => w.toLowerCase() === word.toLowerCase());
+                const next = idx >= 0 ? current.filter((_, i) => i !== idx) : [...current, word];
+                onUpdateSettings(slide.number, { highlightWords: next.join('|') });
+              }}
+            />
+            <HighlightStylePicker
+              selected={(settings.highlightStyle ?? 'none') as HighlightStyle}
+              onChange={(s) => onUpdateSettings(slide.number, { highlightStyle: s })}
+              highlightColor={settings.highlightColor ?? '#E8603C'}
+              onColorChange={(c) => onUpdateSettings(slide.number, { highlightColor: c })}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
-import type { NarrativeSlide, NarrativeThemeId } from '@/types';
+import type { NarrativeSlide, NarrativeThemeId, HighlightStyle } from '@/types';
 import { TYPE_LABELS } from '../constants';
-import { NARRATIVE_PALETTE, Accent, Body, DqMark } from './NarrativeSlideHelpers';
+import { NARRATIVE_PALETTE, Accent, Body, DqMark, HeadlineRenderer } from './NarrativeSlideHelpers';
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 
@@ -11,6 +11,9 @@ export interface NarrativeSlideSettings {
   imageOpacity?: number;
   imageZoom?: number;
   imageOffsetY?: number;
+  highlightWords?: string;
+  highlightStyle?: HighlightStyle;
+  highlightColor?: string;
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -36,6 +39,9 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
     const imgOpacity = settings?.imageOpacity ?? 1.0;
     const imgZoom = settings?.imageZoom ?? 1.0;
     const imgOffsetY = settings?.imageOffsetY ?? 0;
+    const hlWords = settings?.highlightWords;
+    const hlStyle = settings?.highlightStyle ?? 'none';
+    const hlColor = settings?.highlightColor ?? '#E8603C';
     const isEditorial = theme === 'dqef-editorial';
 
     // DQEF editorial: auto-cycle bg per slide number
@@ -113,7 +119,8 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
                 fontSize: (len > 55 ? 64 : len > 30 ? 80 : 96) * hs,
                 color: cardAccent, margin: '0 0 40px', flexShrink: 0,
               }}>
-                {slide.headline}
+                <HeadlineRenderer text={slide.headline} accentColor={cardAccent} headlineColor={cardAccent}
+                  highlightWords={hlWords} highlightStyle={hlStyle} highlightColor={hlColor} isExport={isExport} />
               </h2>
               {/* Body */}
               {slide.bodyText && (
@@ -184,7 +191,8 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
                 margin: '0 0 36px',
                 textShadow: hasPhoto ? '0 2px 24px rgba(0,0,0,0.6)' : 'none',
               }}>
-                "{slide.headline}"
+                "<HeadlineRenderer text={slide.headline} accentColor={accent} headlineColor={textColor}
+                  highlightWords={hlWords} highlightStyle={hlStyle} highlightColor={hlColor} isExport={isExport} />"
               </h2>
               {slide.bodyText && (
                 <Body text={slide.bodyText} accent={accent} color={bodyColor} size={bdSize} />
@@ -231,7 +239,8 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
               <h2 style={{ fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.05,
                 letterSpacing: '-0.025em', fontSize: splitHL,
                 color: textColor, margin: '0 0 28px' }}>
-                <Accent text={slide.headline} color={accent} />
+                <HeadlineRenderer text={slide.headline} accentColor={accent} headlineColor={textColor}
+                  highlightWords={hlWords} highlightStyle={hlStyle} highlightColor={hlColor} isExport={isExport} />
               </h2>
               {slide.bodyText && (
                 <Body text={slide.bodyText} accent={accent} color={bodyColor} size={bdSize * 0.88} />
@@ -322,7 +331,10 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
               margin: '0 0 36px', flexShrink: 0,
               textShadow: isPhotoFull ? '0 2px 32px rgba(0,0,0,0.85)' : 'none',
             }}>
-              <Accent text={slide.headline} color={isPhotoFull ? '#E8603C' : accent} />
+              <HeadlineRenderer text={slide.headline}
+                accentColor={isPhotoFull ? '#E8603C' : accent}
+                headlineColor={isPhotoFull ? '#FFFFFF' : textColor}
+                highlightWords={hlWords} highlightStyle={hlStyle} highlightColor={hlColor} isExport={isExport} />
             </h2>
 
             {/* Body */}
