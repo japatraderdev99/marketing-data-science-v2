@@ -57,6 +57,10 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
     const isDark = textColor === '#FFFFFF';
     const bodyColor  = isDark ? 'rgba(255,255,255,0.74)' : 'rgba(0,0,0,0.62)';
     const labelColor = isDark ? 'rgba(255,255,255,0.36)' : 'rgba(0,0,0,0.30)';
+    // dispAccent: when accent == bg (e.g. orange on orange), flip to contrast
+    const dispAccent = bg.toLowerCase() === accent.toLowerCase()
+      ? (isDark ? '#FFFFFF' : '#111111')
+      : accent;
 
     const len = slide.headline.length;
     const hlSize = (len > 55 ? 58 : len > 30 ? 70 : 84) * hs;
@@ -166,7 +170,7 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
           }}>
             {hasPhoto && <img src={imageUrl!} alt="" style={{ ...imgBaseStyle, opacity: imgOpacity * 0.14 }} />}
             <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', width: '100%' }}>
-              <div style={{ fontSize: 180, fontWeight: 900, lineHeight: 0.7, color: accent,
+              <div style={{ fontSize: 180, fontWeight: 900, lineHeight: 0.7, color: dispAccent,
                 opacity: 0.12, letterSpacing: '-0.05em', marginBottom: 48 }}>
                 "
               </div>
@@ -177,16 +181,16 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
                 textShadow: hasPhoto ? '0 2px 24px rgba(0,0,0,0.6)' : 'none',
                 transform: `translate(${hlX}px, ${hlY}px)`,
               }}>
-                "<HeadlineRenderer text={slide.headline} accentColor={accent} headlineColor={textColor}
+                "<HeadlineRenderer text={slide.headline} accentColor={dispAccent} headlineColor={textColor}
                   highlightWords={hlWords} highlightStyle={hlStyle} highlightColor={hlColor} isExport={isExport} />"
               </h2>
               {slide.bodyText && (
-                <Body text={slide.bodyText} accent={accent} color={bodyColor} size={bdSize} offsetX={bdX} offsetY={bdY} />
+                <Body text={slide.bodyText} accent={dispAccent} color={bodyColor} size={bdSize} offsetX={bdX} offsetY={bdY} />
               )}
               {slide.sourceLabel && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 32 }}>
-                  <div style={{ width: 40, height: 2, background: accent, opacity: 0.5 }} />
-                  <span style={{ fontSize: 16, fontStyle: 'italic', color: accent, letterSpacing: '0.06em' }}>
+                  <div style={{ width: 40, height: 2, background: dispAccent, opacity: 0.5 }} />
+                  <span style={{ fontSize: 16, fontStyle: 'italic', color: dispAccent, letterSpacing: '0.06em' }}>
                     {slide.sourceLabel}
                   </span>
                 </div>
@@ -213,7 +217,7 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
           }}>
             <div style={{ width: '50%', display: 'flex', flexDirection: 'column',
               justifyContent: 'center', padding: '90px 72px', boxSizing: 'border-box' }}>
-              <div style={{ width: 48, height: 4, background: accent, borderRadius: 2, marginBottom: 24 }} />
+              <div style={{ width: 48, height: 4, background: dispAccent, borderRadius: 2, marginBottom: 24 }} />
               {!isExport && (
                 <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em',
                   textTransform: 'uppercase', color: labelColor, marginBottom: 20 }}>
@@ -224,11 +228,11 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
                 letterSpacing: '-0.025em', fontSize: splitHL,
                 color: textColor, margin: '0 0 28px',
                 transform: `translate(${hlX}px, ${hlY}px)` }}>
-                <HeadlineRenderer text={slide.headline} accentColor={accent} headlineColor={textColor}
+                <HeadlineRenderer text={slide.headline} accentColor={dispAccent} headlineColor={textColor}
                   highlightWords={hlWords} highlightStyle={hlStyle} highlightColor={hlColor} isExport={isExport} />
               </h2>
               {slide.bodyText && (
-                <Body text={slide.bodyText} accent={accent} color={bodyColor} size={bdSize * 0.88} offsetX={bdX} offsetY={bdY} />
+                <Body text={slide.bodyText} accent={dispAccent} color={bodyColor} size={bdSize * 0.88} offsetX={bdX} offsetY={bdY} />
               )}
               {slide.sourceLabel && (
                 <span style={{ marginTop: 20, fontSize: 13, fontStyle: 'italic', color: labelColor }}>
@@ -286,7 +290,7 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
             alignItems: slide.layout === 'cta' ? 'center' : 'flex-start',
             textAlign: slide.layout === 'cta' ? 'center' : 'left',
           }}>
-            <div style={{ width: 60, height: 4, background: isPhotoFull ? '#E8603C' : accent,
+            <div style={{ width: 60, height: 4, background: isPhotoFull ? '#E8603C' : dispAccent,
               borderRadius: 2, marginBottom: 20, flexShrink: 0 }} />
             {!isExport && !isPhotoFull && (
               <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em',
@@ -303,18 +307,18 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
               transform: `translate(${hlX}px, ${hlY}px)`,
             }}>
               <HeadlineRenderer text={slide.headline}
-                accentColor={isPhotoFull ? '#E8603C' : accent}
+                accentColor={isPhotoFull ? '#E8603C' : dispAccent}
                 headlineColor={isPhotoFull ? '#FFFFFF' : textColor}
                 highlightWords={hlWords} highlightStyle={hlStyle} highlightColor={hlColor} isExport={isExport} />
             </h2>
             {slide.bodyText && slide.layout !== 'cta' && (
               slide.layout === 'text-heavy' ? (
-                <div style={{ borderLeft: `3px solid ${accent}50`, paddingLeft: 28 }}>
-                  <Body text={slide.bodyText} accent={accent}
+                <div style={{ borderLeft: `3px solid ${dispAccent}50`, paddingLeft: 28 }}>
+                  <Body text={slide.bodyText} accent={dispAccent}
                     color={isPhotoFull ? 'rgba(255,255,255,0.82)' : bodyColor} size={bdSize} offsetX={bdX} offsetY={bdY} />
                 </div>
               ) : (
-                <Body text={slide.bodyText} accent={accent}
+                <Body text={slide.bodyText} accent={dispAccent}
                   color={isPhotoFull ? 'rgba(255,255,255,0.82)' : bodyColor} size={bdSize} offsetX={bdX} offsetY={bdY} />
               )
             )}
@@ -330,14 +334,31 @@ export const NarrativeSlidePreview = forwardRef<HTMLDivElement, Props>(
                 padding: '22px 48px', borderRadius: 999,
                 backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
               }}>
-                <span style={{ fontSize: 28 * bs, fontWeight: 400,
-                  color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.40)' }}>pronto.</span>
-                <span style={{ fontSize: 28 * bs, fontWeight: 800, color: '#E8603C' }}>resolvido.</span>
+                {(!slide.ctaType || slide.ctaType === 'marca') && (<>
+                  <span style={{ fontSize: 28 * bs, fontWeight: 400,
+                    color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.40)' }}>pronto.</span>
+                  <span style={{ fontSize: 28 * bs, fontWeight: 800, color: '#E8603C' }}>resolvido.</span>
+                </>)}
+                {slide.ctaType === 'cadastro' && (<>
+                  <span style={{ fontSize: 28 * bs, fontWeight: 400,
+                    color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.40)' }}>acesse o</span>
+                  <span style={{ fontSize: 28 * bs, fontWeight: 800, color: '#E8603C' }}>link na bio ↑</span>
+                </>)}
+                {slide.ctaType === 'engajamento' && (<>
+                  <span style={{ fontSize: 28 * bs, fontWeight: 800,
+                    color: isDark ? '#FFFFFF' : '#111111' }}>comente aqui</span>
+                  <span style={{ fontSize: 28 * bs, fontWeight: 800, color: '#E8603C' }}>👇</span>
+                </>)}
+                {slide.ctaType === 'compartilhamento' && (
+                  <span style={{ fontSize: 24 * bs, fontWeight: 800,
+                    color: isDark ? '#FFFFFF' : '#111111' }}>marque quem precisa ver →</span>
+                )}
               </div>
             )}
             {slide.layout === 'cta' && slide.bodyText && (
               <p style={{ fontSize: bdSize, color: bodyColor, lineHeight: 1.5,
-                margin: '32px 0 0', maxWidth: 700, textAlign: 'center' }}>
+                margin: '32px 0 0', maxWidth: 700, textAlign: 'center',
+                transform: `translate(${bdX}px, ${bdY}px)` }}>
                 {slide.bodyText}
               </p>
             )}

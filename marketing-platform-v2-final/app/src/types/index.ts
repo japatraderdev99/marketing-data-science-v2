@@ -49,6 +49,7 @@ export type NarrativeSlideType =
 
 export type NarrativeLayout = 'full-image' | 'split' | 'text-heavy' | 'quote' | 'cta' | 'clean-card';
 export type NarrativeThemeId = 'editorial-dark' | 'editorial-cream' | 'brand-bold' | 'dqef-editorial';
+export type NarrativeCTAType = 'marca' | 'cadastro' | 'engajamento' | 'compartilhamento';
 
 export interface NarrativeSlide {
   number: number;
@@ -62,6 +63,7 @@ export interface NarrativeSlide {
   bgColor?: string;
   textColor?: string;
   accentColor?: string;
+  ctaType?: NarrativeCTAType;
 }
 
 export interface NarrativeCarouselOutput {

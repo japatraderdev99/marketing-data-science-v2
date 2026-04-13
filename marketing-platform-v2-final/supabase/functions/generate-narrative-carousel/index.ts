@@ -63,7 +63,7 @@ Cada slide deve avançar a narrativa. Nunca repita ângulos. Crie tensão cresce
 COPY RULES:
 - Headlines: CAIXA ALTA, máx 8 palavras, impactantes e diretos
 - bodyText: 2-4 frases densas, use **negrito** para dados e destaques
-- Dados reais: "(Fonte, Ano)" | sem fonte real: "~estimativa"
+- Dados reais: cite "(Fonte, Ano)" em sourceLabel | sem fonte verificada: omita o sourceLabel completamente — NUNCA escreva "~estimativa", "estimativa", "projeção" ou termos vagos
 - Nunca use jargão corporativo — fale como par para par, brasileiro autônomo
 - ESCAPE corretamente todos os caracteres especiais no JSON
 
@@ -100,7 +100,9 @@ JSON:
 {
   "title": "string", "theme": "editorial-dark|editorial-cream|brand-bold",
   "narrative_arc": "string", "target_connection": "string",
-  "shareability_hook": "string", "caption": "string", "bestTime": "string",
+  "shareability_hook": "string",
+  "caption": "Legenda Instagram estratégica: gancho emocional → insight → menção DQEF Studio → CTA contextual + hashtags",
+  "bestTime": "string",
   "slides": [{
     "number": 1, "type": "hook", "layout": "full-image",
     "headline": "HEADLINE EM CAIXA ALTA",
@@ -121,8 +123,8 @@ Deno.serve(async (req) => {
 
     const systemPrompt = `${NARRATIVE_RULES}\n${brandContext ? `KNOWLEDGE BASE:\n${brandContext}` : ''}`;
     const userPrompt = topic
-      ? `Crie carrossel narrativo:\nTEMA: ${topic}\nÂNGULO: ${audience_angle || 'mais relevante'}\nTOM: ${tone}\nCANAL: ${channel}\nSLIDES: ${Math.min(Math.max(num_slides, 7), 10)}\n${researchData ? `DADOS:\n${researchData}` : 'Marque dados como ~estimativa.'}\nRetorne JSON.`
-      : `Modo autônomo: escolha tema trending, crie ${num_slides} slides narrativos. Marque dados como ~estimativa.`;
+      ? `Crie carrossel narrativo:\nTEMA: ${topic}\nÂNGULO: ${audience_angle || 'mais relevante'}\nTOM: ${tone}\nCANAL: ${channel}\nSLIDES: ${Math.min(Math.max(num_slides, 7), 10)}\n${researchData ? `DADOS:\n${researchData}` : 'Use apenas dados que você conhece com certeza; omita sourceLabel quando não tiver fonte real.'}\n\nCAMPO caption: escreva uma legenda de Instagram com 3-4 parágrafos estratégicos: (1) gancho emocional ligado ao tema, (2) desenvolvimento do insight principal, (3) menção natural à plataforma DQEF Studio como ferramenta que resolve o problema de criar conteúdo profissional sem equipe, (4) CTA contextual ao tema — pode ser pergunta, convite a comentar, ou ação concreta. Tom: editorial, direto, sem hashtags corporativas. Inclua 5-8 hashtags relevantes no final.\n\nRetorne JSON.`
+      : `Modo autônomo: escolha tema trending para empreendedores autônomos brasileiros, crie ${num_slides} slides narrativos. Use apenas dados verificáveis; omita sourceLabel se não tiver fonte real.\n\nCampo caption: legenda estratégica conforme instruções acima.`;
 
     const data = await callOpenRouter(
       [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],

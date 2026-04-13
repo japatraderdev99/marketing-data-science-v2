@@ -3,7 +3,7 @@ import { Download, Loader2, Minimize2, RefreshCw, ImagePlus, SlidersHorizontal, 
 import { toPng } from 'html-to-image';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
-import type { NarrativeSlide, NarrativeThemeId } from '@/types';
+import type { NarrativeSlide, NarrativeThemeId, NarrativeLayout, NarrativeCTAType } from '@/types';
 import { callAI } from '@/lib/ai';
 import { cn } from '@/lib/utils';
 import { NarrativeSlidePreview } from './NarrativeSlidePreview';
@@ -299,7 +299,22 @@ Estilo: documentário, luz natural, professional, sem clichês de stock. Persona
       {/* Inline text editing */}
       {showEdit && (
         <div className="space-y-2 p-3 bg-surface-elevated rounded-lg border border-border">
-          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Editar Copy</p>
+          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Layout</p>
+          <div className="flex flex-wrap gap-1">
+            {(['full-image', 'split', 'text-heavy', 'quote', 'clean-card', 'cta'] as NarrativeLayout[]).map(l => (
+              <button key={l}
+                onClick={() => onUpdateSlide(slideIndex, { layout: l })}
+                className={cn('px-2 py-0.5 rounded text-[9px] font-bold uppercase border transition-colors',
+                  slide.layout === l
+                    ? 'border-brand bg-brand/20 text-brand'
+                    : 'border-border text-text-muted hover:border-brand/50 hover:text-brand/70'
+                )}
+              >
+                {l === 'full-image' ? 'FULL' : l === 'text-heavy' ? 'TEXTO' : l === 'clean-card' ? 'CARD' : l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider pt-1">Editar Copy</p>
           <textarea
             className="w-full bg-surface-hover border border-border rounded-md px-2.5 py-2 text-xs font-bold uppercase text-text-primary resize-none focus:border-brand outline-none leading-snug"
             value={slide.headline}
@@ -341,6 +356,30 @@ Estilo: documentário, luz natural, professional, sem clichês de stock. Persona
               onColorChange={(c) => onUpdateSettings(slide.number, { highlightColor: c })}
             />
           </div>
+          {slide.layout === 'cta' && (
+            <div className="pt-1.5 border-t border-border/50 space-y-1.5">
+              <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Tipo de CTA</p>
+              <div className="flex gap-1">
+                {([
+                  { id: 'marca',          label: 'Marca' },
+                  { id: 'cadastro',       label: 'Link Bio' },
+                  { id: 'engajamento',    label: 'Comente' },
+                  { id: 'compartilhamento', label: 'Marque' },
+                ] as { id: NarrativeCTAType; label: string }[]).map(({ id, label }) => (
+                  <button key={id}
+                    onClick={() => onUpdateSlide(slideIndex, { ctaType: id })}
+                    className={cn('flex-1 py-1 rounded text-[9px] font-bold uppercase border transition-colors',
+                      (slide.ctaType ?? 'marca') === id
+                        ? 'border-brand bg-brand/20 text-brand'
+                        : 'border-border text-text-muted hover:border-brand/50 hover:text-brand/70'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
