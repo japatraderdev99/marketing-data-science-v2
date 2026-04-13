@@ -23,10 +23,11 @@ interface SlidePreviewProps {
   isExport?: boolean;
   nativeWidth?: number;
   nativeHeight?: number;
+  ctaLabel?: string;
 }
 
 export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
-  ({ slide, theme, width = 340, height = 425, imageUrl, showWatermark = true, settings, isExport = false, nativeWidth, nativeHeight }, ref) => {
+  ({ slide, theme, width = 340, height = 425, imageUrl, showWatermark = true, settings, isExport = false, nativeWidth, nativeHeight, ctaLabel }, ref) => {
     const s = settings || DEFAULT_SLIDE_SETTINGS;
     const nw = nativeWidth ?? 1080;
     const nh = nativeHeight ?? 1350;
@@ -146,6 +147,24 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
               }}>
                 pronto. resolvido.
               </p>
+            )}
+
+            {ctaLabel && (
+              <div style={{
+                marginTop: 36,
+                display: 'inline-flex', alignItems: 'center',
+                padding: '14px 44px', borderRadius: 100,
+                border: '3px solid rgba(255,255,255,0.55)',
+                color: '#FFFFFF',
+                fontFamily: s.fontFamily || 'Montserrat', fontWeight: 800,
+                fontSize: Math.round(28 * s.ctaScale), letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                backgroundColor: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(4px)',
+                whiteSpace: 'nowrap',
+              }}>
+                {ctaLabel}
+              </div>
             )}
           </div>
 
