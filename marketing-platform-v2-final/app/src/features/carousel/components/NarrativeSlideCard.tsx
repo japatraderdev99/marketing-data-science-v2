@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Loader2, Minimize2, RefreshCw, ImagePlus, SlidersHorizontal, Pencil } from 'lucide-react';
+import { Download, Loader2, Minimize2, RefreshCw, ImagePlus, SlidersHorizontal, Pencil, Sparkles } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
@@ -11,6 +11,7 @@ import type { NarrativeSlideSettings } from './NarrativeSlidePreview';
 import { SlideImageControls } from './SlideImageControls';
 import { AdjSlider } from './AdjSlider';
 import { WordSelector, HighlightStylePicker } from './WordHighlight';
+import { useSlideImage } from '../hooks/useSlideImage';
 import type { HighlightStyle } from '@/types';
 import { TYPE_LABELS } from '../constants';
 
@@ -51,6 +52,7 @@ export function NarrativeSlideCard({
   const [showEdit, setShowEdit] = useState(false);
   const [isRegen,  setIsRegen]  = useState(false);
   const [isExport, setIsExport] = useState(false);
+  const { generate: generateImg, isGenerating: isGenImg } = useSlideImage();
 
   // ── AI copy regeneration ──────────────────────────────────────────────────
 
@@ -91,6 +93,31 @@ Retorne APENAS JSON: { "headline": "NOVA HEADLINE", "bodyText": "Novo texto com 
     const words = slide.headline.split(' ');
     if (words.length > 3) {
       onUpdateSlide(slideIndex, { headline: words.slice(0, Math.max(3, Math.ceil(words.length * 0.65))).join(' ') });
+    }
+  };
+
+  // ── Generate image from copy ──────────────────────────────────────────────
+
+  const handleGenFromCopy = async () => {
+    try {
+      const res = await callAI('strategy', [
+        {
+          role: 'system',
+          content: `Você é um diretor de arte. Com base no texto do slide, crie um prompt de imagem fotográfica editorial.
+Retorne APENAS o prompt em inglês, sem JSON, sem markdown. Máx 80 palavras.
+Estilo: documentário, luz natural, professional, sem clichês de stock. Personagem: autônomo brasileiro 25-50 anos em ambiente real de trabalho condizente com a área mencionada.`,
+        },
+        {
+          role: 'user',
+          content: `Headline: ${slide.headline}\n${slide.bodyText ? `Body: ${slide.bodyText}` : ''}`,
+        },
+      ], { temperature: 0.9 });
+      const prompt = res.choices?.[0]?.message?.content?.trim() || '';
+      if (!prompt) return;
+      const url = await generateImg({ prompt, translateFirst: false });
+      if (url) onImageChange(slide.number, url);
+    } catch (e) {
+      console.error('[gen-from-copy]', e);
     }
   };
 
@@ -206,13 +233,25 @@ Retorne APENAS JSON: { "headline": "NOVA HEADLINE", "bodyText": "Novo texto com 
 
       {/* Image controls */}
       {showImg && (
-        <SlideImageControls
-          slideNumber={slide.number}
-          imagePromptSuggestion={slide.imagePrompt || ''}
-          currentImageUrl={imageUrl}
-          onImageChange={(url) => onImageChange(slide.number, url)}
-          slideContext={{ headline: slide.headline, slideType: slide.type }}
-        />
+        <div className="space-y-1.5">
+          <SlideImageControls
+            slideNumber={slide.number}
+            imagePromptSuggestion={slide.imagePrompt || ''}
+            currentImageUrl={imageUrl}
+            onImageChange={(url) => onImageChange(slide.number, url)}
+            slideContext={{ headline: slide.headline, slideType: slide.type }}
+          />
+          <button
+            onClick={handleGenFromCopy}
+            disabled={isGenImg}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-medium border border-purple-400/30 text-purple-300 hover:bg-purple-400/10 transition-colors disabled:opacity-40"
+          >
+            {isGenImg
+              ? <><Loader2 className="w-3 h-3 animate-spin" /> Gerando da copy...</>
+              : <><Sparkles className="w-3 h-3" /> Gerar imagem da copy</>
+            }
+          </button>
+        </div>
       )}
 
       {/* Adjustment sliders */}
@@ -225,6 +264,24 @@ Retorne APENAS JSON: { "headline": "NOVA HEADLINE", "bodyText": "Novo texto com 
           <AdjSlider label="Body" value={settings.bodyScale ?? 1}
             min={0.5} max={2.0} step={0.05}
             onValueChange={(v) => onUpdateSettings(slide.number, { bodyScale: v })} />
+          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider pt-1">Posição Headline</p>
+          <AdjSlider label="H. X" value={settings.headlineX ?? 0}
+            min={-200} max={200} step={4}
+            display={`${(settings.headlineX ?? 0) > 0 ? '+' : ''}${settings.headlineX ?? 0}px`}
+            onValueChange={(v) => onUpdateSettings(slide.number, { headlineX: v })} />
+          <AdjSlider label="H. Y" value={settings.headlineY ?? 0}
+            min={-200} max={200} step={4}
+            display={`${(settings.headlineY ?? 0) > 0 ? '+' : ''}${settings.headlineY ?? 0}px`}
+            onValueChange={(v) => onUpdateSettings(slide.number, { headlineY: v })} />
+          <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider pt-1">Posição Body</p>
+          <AdjSlider label="B. X" value={settings.bodyX ?? 0}
+            min={-200} max={200} step={4}
+            display={`${(settings.bodyX ?? 0) > 0 ? '+' : ''}${settings.bodyX ?? 0}px`}
+            onValueChange={(v) => onUpdateSettings(slide.number, { bodyX: v })} />
+          <AdjSlider label="B. Y" value={settings.bodyY ?? 0}
+            min={-200} max={200} step={4}
+            display={`${(settings.bodyY ?? 0) > 0 ? '+' : ''}${settings.bodyY ?? 0}px`}
+            onValueChange={(v) => onUpdateSettings(slide.number, { bodyY: v })} />
           <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider pt-1">Imagem</p>
           <AdjSlider label="Opacidade" value={settings.imageOpacity ?? 1}
             min={0} max={1} step={0.05}

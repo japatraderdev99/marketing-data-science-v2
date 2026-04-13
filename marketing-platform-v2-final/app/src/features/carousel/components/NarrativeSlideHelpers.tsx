@@ -28,25 +28,25 @@ export function Accent({ text, color }: { text: string; color: string }) {
 
 // ── Body text renderer (list or paragraph, supports **bold**) ─────────────────
 
-export function Body({ text, accent, color, size }: { text: string; accent: string; color: string; size: number }) {
+export function Body({ text, accent, color, size, offsetX = 0, offsetY = 0 }: {
+  text: string; accent: string; color: string; size: number; offsetX?: number; offsetY?: number;
+}) {
   const lines = text.split('\n').filter(Boolean);
   const base: React.CSSProperties = {
     fontSize: size, color, lineHeight: 1.58, margin: 0,
     fontFamily: 'Montserrat, sans-serif', fontWeight: 400,
   };
-  if (lines.length > 1) {
-    return (
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {lines.map((line, i) => (
-          <li key={i} style={{ display: 'flex', gap: 18, marginBottom: 14, ...base }}>
-            <span style={{ color: accent, flexShrink: 0, fontWeight: 700 }}>→</span>
-            <span>{line.replace(/^[-•→·\d.]\s*/, '')}</span>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  return (
+  const wrap: React.CSSProperties = offsetX || offsetY ? { transform: `translate(${offsetX}px, ${offsetY}px)` } : {};
+  const inner = lines.length > 1 ? (
+    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+      {lines.map((line, i) => (
+        <li key={i} style={{ display: 'flex', gap: 18, marginBottom: 14, ...base }}>
+          <span style={{ color: accent, flexShrink: 0, fontWeight: 700 }}>→</span>
+          <span>{line.replace(/^[-•→·\d.]\s*/, '')}</span>
+        </li>
+      ))}
+    </ul>
+  ) : (
     <p style={base}>
       {text.split(/(\*\*.*?\*\*)/g).map((p, i) =>
         p.startsWith('**') && p.endsWith('**')
@@ -55,6 +55,7 @@ export function Body({ text, accent, color, size }: { text: string; accent: stri
       )}
     </p>
   );
+  return offsetX || offsetY ? <div style={wrap}>{inner}</div> : inner;
 }
 
 // ── Headline renderer — Accent OR user highlight ──────────────────────────────
