@@ -104,16 +104,18 @@ export const SlidePreview = forwardRef<HTMLDivElement, SlidePreviewProps>(
           {/* Shape overlay */}
           {s.shape !== 'none' && <ShapeOverlay shape={s.shape} theme={theme} isExport />}
 
-          {/* Slide type badge */}
-          <div style={{
-            position: 'absolute', top: 0, left: 0, zIndex: 10,
-            fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-            padding: '8px 18px',
-            backgroundColor: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.6)',
-            borderBottomRightRadius: 8,
-          }}>
-            {typeLabel}
-          </div>
+          {/* Slide type badge — preview only */}
+          {!isExport && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, zIndex: 10,
+              fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+              padding: '8px 18px',
+              backgroundColor: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.6)',
+              borderBottomRightRadius: 8,
+            }}>
+              {typeLabel}
+            </div>
+          )}
 
           {/* Content — positioned by textPositionX/Y percentages */}
           <div style={{
