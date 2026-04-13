@@ -119,9 +119,9 @@ export function ArteUnica() {
   return (
     <>
       {showMediaPicker && <MediaPickerModal currentUrl={imageUrl} onSelect={setImageUrl} onClose={() => setShowMediaPicker(false)} />}
-      <div className="flex gap-6 h-full">
+      <div className="flex flex-col lg:flex-row gap-6 h-full">
         {/* Left Panel */}
-        <div className="w-80 shrink-0 space-y-4 overflow-y-auto pr-2 scrollbar-thin">
+        <div className="w-full lg:w-80 shrink-0 space-y-4 overflow-y-auto pr-2 scrollbar-thin">
           <StrategyContext />
 
           {/* Format Selector */}
@@ -248,9 +248,9 @@ export function ArteUnica() {
                 </div>
               </div>
 
-              <div className="flex gap-5 items-start">
+              <div className="flex flex-col sm:flex-row gap-5 items-start">
                 {/* Preview */}
-                <div className="shrink-0 relative">
+                <div className="shrink-0 relative self-center sm:self-start">
                   <SlidePreview slide={slide} theme={theme} width={preview.w} height={preview.h}
                     nativeWidth={format.width} nativeHeight={format.height}
                     settings={settings} imageUrl={imageUrl} />

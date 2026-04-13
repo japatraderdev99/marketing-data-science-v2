@@ -64,7 +64,7 @@ export default function MetaAdsTab({ period }: { period: string }) {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
           { icon: DollarSign, label: 'INVESTIMENTO', value: `R$${k.spend.toFixed(2)}` },
           { icon: Eye, label: 'IMPRESSÕES', value: fmtNum(k.impressions) },
@@ -84,7 +84,7 @@ export default function MetaAdsTab({ period }: { period: string }) {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {/* Spend by Campaign */}
         <div className="col-span-2 p-5 rounded-xl border border-border bg-surface-elevated">
           <span className="font-bold text-sm text-text-primary">Spend por Campanha</span>

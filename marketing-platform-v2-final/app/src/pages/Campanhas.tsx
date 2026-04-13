@@ -3,7 +3,7 @@ import { CampaignList } from '@/features/campaigns/components/CampaignList';
 
 export default function Campanhas() {
   return (
-    <div className="p-6 max-w-[1200px] mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-[1200px] mx-auto space-y-5 sm:space-y-6">
       <div className="flex items-center gap-3">
         <Megaphone className="w-5 h-5 text-brand" />
         <div>

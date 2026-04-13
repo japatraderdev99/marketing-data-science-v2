@@ -82,7 +82,7 @@ export default function SaudeFinanceiraTab({ period = '30d' }: { period?: string
       </div>
 
       {/* KPI Row 1 */}
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         <KpiCard icon={DollarSign} label="GMV MENSAL" value={`R$${gmv.toFixed(2)}`} sub={`${bookings} serviços`} />
         <KpiCard icon={TrendingUp} label="RECEITA TOTAL" value={`R$${revenue.toFixed(2)}`} sub="Take Rate + Subs" />
         <KpiCard icon={CreditCard} label="MRR ASSINATURAS" value="R$0.00" sub="0 assinantes" />
@@ -92,7 +92,7 @@ export default function SaudeFinanceiraTab({ period = '30d' }: { period?: string
       </div>
 
       {/* KPI Row 2 */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard icon={DollarSign} label="TICKET MÉDIO" value={ticket > 0 ? `R$${ticket.toFixed(2)}` : '—'} sub="" />
         <KpiCard icon={Sparkles} label="MARGEM LÍQUIDA" value={`${marginPct.toFixed(1)}%`} sub="Take Rate + Saque - Pix" />
         <KpiCard icon={Repeat} label="CHURN RATE" value="5%" sub="" />

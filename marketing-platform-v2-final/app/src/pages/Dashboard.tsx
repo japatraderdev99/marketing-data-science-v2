@@ -86,32 +86,34 @@ function MetricCard({ icon: Icon, label, value, sub, color }: {
 
 export default function Dashboard() {
   return (
-    <div className="p-6 max-w-[1400px] mx-auto space-y-5">
+    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-4 sm:space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:justify-between">
         <div>
           <h1 className="font-heading font-black text-xl uppercase text-text-primary">Dashboard</h1>
           <p className="text-sm text-text-secondary">Visão geral da operação de marketing</p>
         </div>
-        <p className="text-xs text-text-muted">Pré-inauguração · 15/03/2026</p>
-        <div className="flex gap-2">
-          {['7 dias', '30 dias', '90 dias'].map((period, i) => (
-            <button
-              key={period}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors',
-                i === 1 ? 'bg-brand text-white' : 'bg-surface-elevated text-text-secondary hover:text-text-primary',
-              )}
-            >
-              {period}
-            </button>
-          ))}
+        <div className="flex items-center justify-between sm:justify-end gap-4">
+          <p className="text-xs text-text-muted hidden sm:block">Pré-inauguração · 15/03/2026</p>
+          <div className="flex gap-2">
+            {['7 dias', '30 dias', '90 dias'].map((period, i) => (
+              <button
+                key={period}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors',
+                  i === 1 ? 'bg-brand text-white' : 'bg-surface-elevated text-text-secondary hover:text-text-primary',
+                )}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Top row: Health Score + KPIs */}
-      <div className="grid grid-cols-7 gap-3">
-        <div className="col-span-2 p-4 rounded-xl border border-border bg-surface-elevated">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="col-span-2 md:col-span-4 lg:col-span-2 p-4 rounded-xl border border-border bg-surface-elevated">
           <div className="flex items-center gap-2 mb-3">
             <Zap className="w-4 h-4 text-brand" />
             <span className="text-xs font-bold text-text-primary uppercase">Health Score</span>
@@ -141,7 +143,7 @@ export default function Dashboard() {
       </div>
 
       {/* Second row: Operational metrics */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <MetricCard icon={Zap} label="Prestadores Ativos" value="470" sub="+34 esta semana" color="text-emerald-400" />
         <MetricCard icon={Eye} label="Clientes Ativos" value="1.450" sub="+112 esta semana" color="text-emerald-400" />
         <MetricCard icon={BarChart3} label="GMV Acumulado" value="R$62k" sub="+18% mês" color="text-emerald-400" />
@@ -150,10 +152,10 @@ export default function Dashboard() {
       </div>
 
       {/* Third row: Chart + Funnel */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Revenue Chart */}
-        <div className="col-span-2 p-5 rounded-xl border border-border bg-surface-elevated">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 p-5 rounded-xl border border-border bg-surface-elevated">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-brand" />
               <span className="text-sm font-bold text-text-primary">Receita vs Meta — Últimos 6 Meses</span>

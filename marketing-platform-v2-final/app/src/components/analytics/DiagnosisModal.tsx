@@ -24,7 +24,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
 function KpiBar({ snapshot }: { snapshot: KpiSnapshot }) {
   return (
-    <div className="grid grid-cols-4 gap-2 mb-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
       {[
         { icon: DollarSign, label: 'Invest. Total', value: `R$${(snapshot.totalInvest).toFixed(0)}`, color: 'text-brand' },
         { icon: TrendingUp, label: 'Conversões', value: String(snapshot.totalConversions), color: 'text-emerald-400' },

@@ -186,11 +186,11 @@ export default function FunilE2ETab({ period = '30d' }: { period?: string }) {
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {channels.map((ch) => <ChannelFunnelCard key={ch.name} data={ch} />)}
       </div>
 
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { icon: DollarSign, label: 'INVESTIMENTO', value: totalInvestment > 0 ? `R$${fmtK(totalInvestment)}` : 'R$0', sub: 'Meta + Google' },
           { icon: Users, label: 'CADASTROS', value: String(totalCadastros), sub: 'Firestore real' },

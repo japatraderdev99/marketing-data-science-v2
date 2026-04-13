@@ -35,7 +35,7 @@ export default function VideoIA() {
       </div>
 
       {/* Models */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {MODELS.map(m => (
           <div key={m.name} className="rounded-xl border border-border bg-surface-elevated p-4 text-center opacity-50">
             <Sparkles className="w-6 h-6 text-brand mx-auto mb-2" />

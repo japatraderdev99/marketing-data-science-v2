@@ -40,9 +40,9 @@ export default function Estrategia() {
   const metaColor = metafieldsScore >= 80 ? 'text-emerald-400' : metafieldsScore >= 50 ? 'text-amber-400' : 'text-text-muted';
 
   return (
-    <div className="p-6 max-w-[900px] mx-auto space-y-5">
+    <div className="p-4 sm:p-6 max-w-[900px] mx-auto space-y-4 sm:space-y-5">
       {/* Scorecard */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <ScorecardCard
           icon={Target} label="Seções Críticas"
           value={`${criticalFilled}/${totalCritical}`}

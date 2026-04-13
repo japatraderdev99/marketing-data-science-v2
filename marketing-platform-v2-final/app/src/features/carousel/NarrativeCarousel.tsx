@@ -98,9 +98,9 @@ export function NarrativeCarousel() {
   };
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* ── Left panel ────────────────────────────────────────────────────── */}
-      <div className="w-80 shrink-0 space-y-5 overflow-y-auto pr-2 scrollbar-thin">
+      <div className="w-full lg:w-80 shrink-0 space-y-5 overflow-y-auto pr-2 scrollbar-thin">
         <StrategyContext />
 
         <div className="space-y-2">

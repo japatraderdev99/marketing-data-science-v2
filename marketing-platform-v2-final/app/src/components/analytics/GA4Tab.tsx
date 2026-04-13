@@ -68,7 +68,7 @@ export default function GA4Tab({ period = '30d' }: { period?: string }) {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiCard icon={Activity} label="SESSÕES" value={fmtNum(k.sessions)} />
         <KpiCard icon={Users} label="USUÁRIOS" value={fmtNum(k.users)} />
         <KpiCard icon={Activity} label="TAXA DE REJEIÇÃO" value={`${k.bounceRate}%`} />
@@ -95,7 +95,7 @@ export default function GA4Tab({ period = '30d' }: { period?: string }) {
       </div>
 
       {/* Bounce Rate + Devices */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="col-span-3 p-5 rounded-xl border border-border bg-surface-elevated">
           <span className="font-bold text-sm text-text-primary">Taxa de Rejeição & Conversão</span>
           {bounceData.length > 0 ? (

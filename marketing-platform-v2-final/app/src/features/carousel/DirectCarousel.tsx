@@ -59,9 +59,9 @@ export function DirectCarousel() {
   };
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Left: Input Panel */}
-      <div className="w-80 shrink-0 space-y-5 overflow-y-auto pr-2">
+      <div className="w-full lg:w-80 shrink-0 space-y-5 overflow-y-auto pr-2">
         <CarouselInputPanel onGenerate={generate} isGenerating={isGenerating} />
 
         {carousel && (

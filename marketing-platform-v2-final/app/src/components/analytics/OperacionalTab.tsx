@@ -64,7 +64,7 @@ export default function OperacionalTab({ period }: { period: string }) {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
           { icon: Users, label: 'CLIENTES', value: String(s.clients), sub: `de ${s.clientsTotal} total`, color: 'text-brand' },
           { icon: Briefcase, label: 'PRESTADORES', value: String(s.providers), sub: s.providersPct, color: 'text-brand' },
@@ -99,7 +99,7 @@ export default function OperacionalTab({ period }: { period: string }) {
       )}
 
       {/* Map + Ranking */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="col-span-2 p-5 rounded-xl border border-border bg-surface-elevated">
           <svg viewBox="0 500 540 200" className="w-full h-[340px]">
             {Object.entries(BRAZIL_STATES).map(([code, { path, cx, cy }]) => {
