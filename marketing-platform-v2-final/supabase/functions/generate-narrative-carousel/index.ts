@@ -75,10 +75,26 @@ LAYOUTS (escolha o mais impactante por slide):
 - clean-card: headline ENORME em cor accent, body abaixo, imagem como card inset — use em CTA ou número impactante
 - cta: centrado com pill "pronto. resolvido." — slide final
 
-IMAGE PROMPTS: inglês, mín 60 palavras, estilo documentário.
-Personagem: profissional liberal autônomo brasileiro 30-50 anos — diverso em área (consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta). NÃO restringir a trabalhos braçais. Vestimenta e ambiente condizentes com a profissão.
-PROIBIDO: estereótipos raciais ou socioeconômicos, roupas sujas, ambientes de pobreza ou favela, generalizar como apenas eletricista/mecânico/diarista.
-Canon R5, 35mm f/2.8, luz natural, SEM TEXTO, SEM LOGOS na imagem.
+IMAGE PROMPTS: inglês, mín 80 palavras, fotojornalismo documental profissional.
+
+PERSONAGEM — escolha UMA profissão por slide (varie entre slides):
+consultant, graphic designer, lawyer, executive coach, nutritionist, accountant, photographer, architect, therapist, physician, engineer, university professor, marketing manager, financial analyst, dentist, veterinarian, psychologist, physiotherapist, audiovisual producer, real estate agent.
+
+MAPEAMENTO PROFISSÃO → CENÁRIO (use exatamente):
+- consultant / coach / analyst → modern meeting room, laptop open, business casual attire, glass walls
+- designer / photographer / producer → creative studio, iMac or camera gear, clean workspace
+- architect / engineer → drafting table with blueprints, scale model, bright office
+- lawyer / accountant → professional office, legal books or spreadsheets on screen, formal attire
+- therapist / psychologist / physician / dentist → well-lit clinic or consultation room, professional coat
+- nutritionist / physiotherapist → clean clinical space or gym, white coat or athletic professional wear
+- professor → university classroom or library, books, projector light
+
+TOKENS ABSOLUTAMENTE PROIBIDOS no imagePrompt:
+"calloused hands", "worn table", "kitchen table", "humble", "modest home", "simple tiles",
+"worn-out", "shanty", "stained walls", "poverty", "favela", "cracked walls", "plastic chair",
+"worker" (use the specific profession instead), "laborer", "handyman".
+
+Câmera: Canon R5, 35mm f/2.8, luz natural ou difusa de janela. SEM TEXTO, SEM LOGOS.
 
 JSON:
 {
