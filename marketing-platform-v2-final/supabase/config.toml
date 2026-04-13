@@ -401,3 +401,48 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # declarative_schema_path = "./declarative"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# ─── Edge Functions — JWT verification ───────────────────────────────────────
+# These functions handle auth internally (getStrategyContext / getUserId).
+# Disabling gateway-level JWT check prevents "Invalid JWT" on expired tokens.
+[functions.generate-narrative-carousel]
+verify_jwt = false
+
+[functions.generate-carousel-visual]
+verify_jwt = false
+
+[functions.generate-creative-batch]
+verify_jwt = false
+
+[functions.generate-single-ad]
+verify_jwt = false
+
+[functions.generate-slide-image]
+verify_jwt = false
+
+[functions.ai-router]
+verify_jwt = false
+
+[functions.analytics-diagnosis]
+verify_jwt = false
+
+[functions.analyze-brand-document]
+verify_jwt = false
+
+[functions.analyze-benchmark]
+verify_jwt = false
+
+[functions.extract-strategy-metafields]
+verify_jwt = false
+
+[functions.fill-metafields-from-knowledge]
+verify_jwt = false
+
+[functions.fill-playbook-from-knowledge]
+verify_jwt = false
+
+[functions.analyze-content-patterns]
+verify_jwt = false
+
+[functions.tag-media]
+verify_jwt = false

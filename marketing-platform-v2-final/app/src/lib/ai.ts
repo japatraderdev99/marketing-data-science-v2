@@ -1,6 +1,44 @@
 import { supabase } from './supabase';
 import type { AITaskType } from '@/types';
 
+/** Ensure the session is fresh before calling edge functions. */
+async function ensureFreshSession(): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  // If access token expires in less than 60 seconds, refresh proactively
+  const expiresAt = session.expires_at ?? 0;
+  if (expiresAt - Math.floor(Date.now() / 1000) < 60) {
+    await supabase.auth.refreshSession();
+  }
+}
+
+/** Invoke an edge function with automatic session refresh on JWT errors. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function invokeWithRetry<T = any>(
+  fn: string,
+  body: Record<string, unknown>,
+): Promise<T> {
+  await ensureFreshSession();
+
+  const { data, error } = await supabase.functions.invoke(fn, { body });
+
+  if (error) {
+    const msg = error.message || '';
+    if (msg.includes('Invalid JWT') || msg.includes('JWT') || error.status === 401) {
+      // Refresh session and retry once
+      await supabase.auth.refreshSession();
+      const { data: data2, error: error2 } = await supabase.functions.invoke(fn, { body });
+      if (error2) throw new Error(await extractFunctionError(error2));
+      if ((data2 as Record<string, unknown>)?.error) throw new Error(String((data2 as Record<string, unknown>).error));
+      return data2 as T;
+    }
+    throw new Error(await extractFunctionError(error));
+  }
+
+  if ((data as Record<string, unknown>)?.error) throw new Error(String((data as Record<string, unknown>).error));
+  return data as T;
+}
+
 interface AICallOptions {
   temperature?: number;
   max_tokens?: number;
@@ -23,19 +61,12 @@ export async function callAI(
   options: AICallOptions = {},
 ): Promise<AIResponse> {
   const { data: { session } } = await supabase.auth.getSession();
-
-  const { data, error } = await supabase.functions.invoke('ai-router', {
-    body: {
-      task_type: taskType,
-      messages,
-      options,
-      user_id: session?.user?.id,
-    },
+  return invokeWithRetry<AIResponse>('ai-router', {
+    task_type: taskType,
+    messages,
+    options,
+    user_id: session?.user?.id,
   });
-
-  if (error) throw new Error(error.message || 'Erro na chamada de IA');
-  if (data?.error) throw new Error(data.error);
-  return data as AIResponse;
 }
 
 async function extractFunctionError(error: unknown): Promise<string> {
@@ -64,13 +95,7 @@ export async function generateCarouselVisual(params: {
   channel?: string;
   tone?: string;
 }) {
-  const { data, error } = await supabase.functions.invoke('generate-carousel-visual', {
-    body: params,
-  });
-
-  if (error) { console.error('[generate-carousel-visual]', error); throw new Error(await extractFunctionError(error)); }
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return invokeWithRetry('generate-carousel-visual', params as Record<string, unknown>);
 }
 
 export async function generateNarrativeCarousel(params: {
@@ -82,13 +107,7 @@ export async function generateNarrativeCarousel(params: {
   researchData?: string;
   researchCitations?: string[];
 }) {
-  const { data, error } = await supabase.functions.invoke('generate-narrative-carousel', {
-    body: params,
-  });
-
-  if (error) { console.error('[generate-narrative-carousel]', error); throw new Error(await extractFunctionError(error)); }
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return invokeWithRetry('generate-narrative-carousel', params as Record<string, unknown>);
 }
 
 export async function generateCreativeBatch(params: {
@@ -99,13 +118,7 @@ export async function generateCreativeBatch(params: {
   style?: string;
   count?: number;
 }) {
-  const { data, error } = await supabase.functions.invoke('generate-creative-batch', {
-    body: params,
-  });
-
-  if (error) { console.error('[generate-creative-batch]', error); throw new Error(await extractFunctionError(error)); }
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return invokeWithRetry('generate-creative-batch', params as Record<string, unknown>);
 }
 
 export async function generateSlideImage(params: {
@@ -113,13 +126,7 @@ export async function generateSlideImage(params: {
   quality?: 'standard' | 'hq';
   translateFirst?: boolean;
 }): Promise<{ imageUrl: string | null; imageBase64: string | null }> {
-  const { data, error } = await supabase.functions.invoke('generate-slide-image', {
-    body: params,
-  });
-
-  if (error) { console.error('[generate-slide-image]', error); throw new Error(await extractFunctionError(error)); }
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return invokeWithRetry('generate-slide-image', params as Record<string, unknown>);
 }
 
 export async function generateSingleAd(params: {
@@ -131,10 +138,8 @@ export async function generateSingleAd(params: {
   userId?: string;
 }) {
   const { data: { session } } = await supabase.auth.getSession();
-  const { data, error } = await supabase.functions.invoke('generate-single-ad', {
-    body: { ...params, userId: params.userId ?? session?.user?.id },
-  });
-  if (error) { console.error('[generate-single-ad]', error); throw new Error(await extractFunctionError(error)); }
-  if (data?.error) throw new Error(data.error);
-  return data as { slide: import('@/types').SlideOutput & { caption: string; hashtags: string[]; cta: string; copyRationale: string }; format: string };
+  return invokeWithRetry<{ slide: import('@/types').SlideOutput & { caption: string; hashtags: string[]; cta: string; copyRationale: string }; format: string }>(
+    'generate-single-ad',
+    { ...params as Record<string, unknown>, userId: params.userId ?? session?.user?.id },
+  );
 }
