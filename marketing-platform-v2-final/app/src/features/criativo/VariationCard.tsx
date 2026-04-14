@@ -9,6 +9,7 @@ import { MediaPickerModal } from './components/MediaPickerModal';
 import { DEFAULT_SLIDE_SETTINGS } from '@/types';
 import { SlidePreview } from '@/features/carousel/components/SlidePreview';
 import { SlideControls } from '@/features/carousel/components/SlideControls';
+import { WordSelector, HighlightStylePicker } from '@/features/carousel/components/WordHighlight';
 import { VISUAL_STYLES } from '@/features/carousel/constants';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -176,6 +177,25 @@ export function VariationCard({
             onChange={(e) => onUpdateVariation({ cta: e.target.value })}
             placeholder="CTA"
           />
+          <div className="pt-1.5 border-t border-border/30 space-y-1.5">
+            <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider">Destaque na headline</p>
+            <WordSelector
+              headline={variation.headline}
+              selectedWords={settings.highlightWords ? settings.highlightWords.split('|').filter(Boolean) : []}
+              onToggleWord={(word) => {
+                const cur = settings.highlightWords ? settings.highlightWords.split('|') : [];
+                const exists = cur.some(w => w.toLowerCase() === word.toLowerCase());
+                const next = exists ? cur.filter(w => w.toLowerCase() !== word.toLowerCase()) : [...cur, word];
+                onUpdateSettings({ highlightWords: next.join('|') });
+              }}
+            />
+            <HighlightStylePicker
+              selected={settings.highlightStyle}
+              onChange={(s) => onUpdateSettings({ highlightStyle: s })}
+              highlightColor={settings.highlightColor}
+              onColorChange={(c) => onUpdateSettings({ highlightColor: c })}
+            />
+          </div>
         </div>
       )}
 

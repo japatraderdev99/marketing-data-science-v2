@@ -46,13 +46,14 @@ REGRAS:
 - Headlines: CAIXA ALTA, 3-7 palavras, máximo impacto
 - Subtexto: 1-2 linhas de suporte
 - CTA: curto e direto
-- Image prompts em inglês, mín 60 palavras, estilo documentário fotográfico
-- REGRA FUNDAMENTAL: a cena SEMPRE mostra o profissional TRABALHANDO ou em seu AMBIENTE DE TRABALHO — nunca em lazer, nunca em casa, nunca em bar, nunca sentado na calçada
-- OBRIGATÓRIO no imagePrompt: nomear a profissão + mostrar a ação de trabalho + o ambiente profissional (ex: "a Brazilian electrician in her 30s installing a circuit panel in a clean residential apartment", "a Brazilian chef plating food in a professional kitchen")
-- Sujeito: autônomo brasileiro, 25-50 anos — VARIAR gênero, fenótipo e profissão entre variações. Atende qualquer autônomo: consultor, designer, advogado, coach, nutricionista, contador, fotógrafo, arquiteto, terapeuta, eletricista, mecânico, cozinheiro, costureira, personal trainer, professor
-- Vestimenta: roupas de trabalho adequadas à profissão — um mecânico usa macacão limpo, uma consultora usa roupa social, um chef usa jaleco. NUNCA: regata, chinelo, roupa de lazer
-- Ambiente: local de trabalho real — oficina, escritório, cozinha, obra em andamento, estúdio, consultório. NUNCA: bar de bairro, calçada residencial, cadeira de plástico, ambiente de lazer
-- Documentário = autêntico e honesto, NÃO = pobreza, NÃO = aspiracional fake. O foco é a dignidade do trabalho.
+- Image prompts em inglês, mín 60 palavras, fotografia documental estilo iPhone — espontânea, íntima, NÃO parece banco de imagens nem produção audiovisual com estúdio
+- Estética obrigatória: "shot on iPhone 15 Pro, handheld, candid" — luz natural pela janela ou luz ambiente quente, ligeiramente imperfeito mas bonito. Parece foto real tirada por um colega, nunca um ensaio corporativo montado.
+- REGRA FUNDAMENTAL: a cena SEMPRE mostra o profissional TRABALHANDO ou em seu AMBIENTE DE TRABALHO — nunca em lazer puro, nunca sentado na calçada
+- OBRIGATÓRIO no imagePrompt: nomear a profissão + mostrar a ação de trabalho + o ambiente (ex: "a Brazilian consultant in her 30s reviewing a spreadsheet at her home office desk", "a Brazilian chef plating food in a neighborhood kitchen")
+- Sujeito: autônomo brasileiro, 25-50 anos — VARIAR gênero, fenótipo e profissão entre variações
+- Vestimenta: casual profissional adequada — consultora de casa usa blusa social ou camiseta limpa, chef usa jaleco, fotógrafo usa roupa casual com câmera. NUNCA: regata, chinelo, roupa de lazer
+- Ambiente preferencial: home office bem equipado (escrivaninha organizada em apartamento com boa luz), coworking informal, café de bairro enquanto trabalha em laptop, consultório ou estúdio simples. EVITAR: sala de reunião corporativa envidraçada, fundo clean de estúdio, cenário visivelmente "montado"
+- Documentário = autêntico e honesto, NÃO = pobreza, NÃO = aspiracional fake corporativo. Digno, real, brasileiro.
 - Diversificar profissão, gênero, etnia e tipo de ambiente entre as variações
 
 JSON:
