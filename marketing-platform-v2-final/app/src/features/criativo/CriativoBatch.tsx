@@ -35,6 +35,7 @@ function FormatShape({ format, size = 22 }: { format: AdFormat; size?: number })
 
 export function CriativoBatch() {
   const [briefing, setBriefing] = useState('');
+  const [visualDirection, setVisualDirection] = useState('');
   const [angle, setAngle] = useState('');
   const [formatId, setFormatId] = useState('ig-feed');
   const [nicheMode, setNicheMode] = useState('');
@@ -69,6 +70,7 @@ export function CriativoBatch() {
       setProgress(`Gerando ${count} variações...`);
       const result = await generateCreativeBatch({
         briefing,
+        visualDirection,
         angle,
         channel: `${format.channel} ${format.label} (${format.ratio} ${format.width}×${format.height}px)`,
         niches,
@@ -115,7 +117,7 @@ export function CriativoBatch() {
       }
     } catch (err) { setError(err instanceof Error ? err.message : 'Erro na geração batch'); }
     finally { setIsGenerating(false); setProgress(''); }
-  }, [briefing, angle, format, formatId, niches, style, count]);
+  }, [briefing, visualDirection, angle, format, formatId, niches, style, count]);
 
   const handleExportSelected = async () => {
     const toExport = variations.filter(v => v.status === 'done' && (selected.size === 0 || selected.has(v.id)));
@@ -190,6 +192,13 @@ export function CriativoBatch() {
         <div className="space-y-2">
           <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Briefing</label>
           <textarea value={briefing} onChange={e => setBriefing(e.target.value)} placeholder="O que comunicar..."
+            className="w-full bg-surface-hover border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted resize-none focus:border-brand outline-none" rows={3} />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Direção de Arte</label>
+          <textarea value={visualDirection} onChange={e => setVisualDirection(e.target.value)}
+            placeholder="Descreva o visual desejado em português — cores, clima, ambiente, estilo da foto, roupa, expressão, iluminação..."
             className="w-full bg-surface-hover border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted resize-none focus:border-brand outline-none" rows={3} />
         </div>
 

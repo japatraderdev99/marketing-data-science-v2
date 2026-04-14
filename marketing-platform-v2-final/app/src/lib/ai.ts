@@ -112,6 +112,7 @@ export async function generateNarrativeCarousel(params: {
 
 export async function generateCreativeBatch(params: {
   briefing?: string;
+  visualDirection?: string;
   angle?: string;
   channel?: string;
   niches?: string[];

@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       briefing = '',
+      visualDirection = '',
       angle = '',
       channel = 'Instagram Feed',
       niches = [],
@@ -91,6 +92,7 @@ Deno.serve(async (req) => {
     const systemPrompt = `${BATCH_PROMPT}\n${brandContext ? `\nKNOWLEDGE BASE DA MARCA:\n${brandContext}` : ''}`;
     const userPrompt = `Gere ${count} variações de criativo:
 ${briefing ? `BRIEFING: ${briefing}` : 'Modo autônomo: escolha o melhor tema'}
+${visualDirection ? `DIREÇÃO DE ARTE (siga rigorosamente para o imagePrompt E para o estilo visual das copies): ${visualDirection}` : ''}
 ${angle ? `ÂNGULO: ${angle}` : ''}
 CANAL: ${channel}
 ${niches.length ? `NICHOS: ${niches.join(', ')}` : ''}
