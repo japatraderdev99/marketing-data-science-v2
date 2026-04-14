@@ -75,26 +75,32 @@ LAYOUTS (escolha o mais impactante por slide):
 - clean-card: headline ENORME em cor accent, body abaixo, imagem como card inset — use em CTA ou número impactante
 - cta: centrado com pill "pronto. resolvido." — slide final
 
-IMAGE PROMPTS: inglês, mín 80 palavras, fotojornalismo documental profissional.
+IMAGE PROMPTS: inglês, mín 80 palavras, fotografia editorial brasileira quente e autêntica.
+Color grading obrigatório: âmbar/dourado quente. NÃO stock photo americano, NÃO escritório corporativo.
+Dois modos — escolha o mais impactante por slide:
+MODO A (DOCUMENTAL): cena real brasileira — apartamento com vista de prédios residenciais pela janela, oficina ou comércio de bairro, rua de paralelepípedo ao entardecer dourado, interior com luz natural quente. Sujeito em ação real, composição candidata.
+MODO B (RETRATO EDITORIAL): sujeito de frente segurando ferramenta da profissão, fundo texturizado neutro quente (taupe, reboco antigo, papel kraft), luz difusa quente, leve borda envelhecida estilo fotografia antiga.
 
 PERSONAGEM — escolha UMA profissão por slide (varie entre slides):
 consultant, graphic designer, lawyer, executive coach, nutritionist, accountant, photographer, architect, therapist, physician, engineer, university professor, marketing manager, financial analyst, dentist, veterinarian, psychologist, physiotherapist, audiovisual producer, real estate agent.
 
-MAPEAMENTO PROFISSÃO → CENÁRIO (use exatamente):
-- consultant / coach / analyst → modern meeting room, laptop open, business casual attire, glass walls
-- designer / photographer / producer → creative studio, iMac or camera gear, clean workspace
-- architect / engineer → drafting table with blueprints, scale model, bright office
-- lawyer / accountant → professional office, legal books or spreadsheets on screen, formal attire
-- therapist / psychologist / physician / dentist → well-lit clinic or consultation room, professional coat
-- nutritionist / physiotherapist → clean clinical space or gym, white coat or athletic professional wear
-- professor → university classroom or library, books, projector light
+MAPEAMENTO PROFISSÃO → CENÁRIO BRASILEIRO (use exatamente):
+- consultant / coach / analyst → home office in a Brazilian apartment, organized desk near window with view of city buildings, warm afternoon light, laptop and notebook, camiseta casual
+- designer / photographer / producer → home studio or apartment workspace, camera gear or drawing tablet, natural window light, casual clothing
+- architect / engineer → desk with blueprints and scale models, apartment home office or simple studio, natural light, casual work attire
+- lawyer / accountant → simple neighborhood office or home office desk, law books or papers, casual professional clothing, warm lamp light
+- therapist / psychologist / physician / dentist → simple welcoming consultation room, warm neutral walls, comfortable chairs, diffused natural light, professional white coat
+- nutritionist / physiotherapist → simple clean clinic room or home studio, profession tools on table, natural light, white coat
+- professor → home office with bookshelves, or simple classroom with natural light, books and notes, casual attire
 
 TOKENS ABSOLUTAMENTE PROIBIDOS no imagePrompt:
 "calloused hands", "worn table", "kitchen table", "humble", "modest home", "simple tiles",
 "worn-out", "shanty", "stained walls", "poverty", "favela", "cracked walls", "plastic chair",
-"worker" (use the specific profession instead), "laborer", "handyman".
+"worker" (use the specific profession instead), "laborer", "handyman",
+"glass walls", "modern meeting room", "open plan office", "co-working space",
+"corporate headquarters", "business casual", "minimalist white desk", "neon coworking".
 
-Câmera: Canon R5, 35mm f/2.8, luz natural ou difusa de janela. SEM TEXTO, SEM LOGOS.
+Câmera: Canon R5 35mm f/2.8 ou estética iPhone 15 Pro, luz natural quente. SEM TEXTO, SEM LOGOS.
 
 JSON:
 {

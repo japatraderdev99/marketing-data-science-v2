@@ -46,15 +46,15 @@ REGRAS:
 - Headlines: CAIXA ALTA, 3-7 palavras, máximo impacto
 - Subtexto: 1-2 linhas de suporte
 - CTA: curto e direto
-- Image prompts em inglês, mín 60 palavras, fotografia documental estilo iPhone — espontânea, íntima, NÃO parece banco de imagens nem produção audiovisual com estúdio
-- Estética obrigatória: "shot on iPhone 15 Pro, handheld, candid" — luz natural pela janela ou luz ambiente quente, ligeiramente imperfeito mas bonito. Parece foto real tirada por um colega, nunca um ensaio corporativo montado.
-- REGRA FUNDAMENTAL: a cena SEMPRE mostra o profissional TRABALHANDO ou em seu AMBIENTE DE TRABALHO — nunca em lazer puro, nunca sentado na calçada
-- OBRIGATÓRIO no imagePrompt: nomear a profissão + mostrar a ação de trabalho + o ambiente (ex: "a Brazilian consultant in her 30s reviewing a spreadsheet at her home office desk", "a Brazilian chef plating food in a neighborhood kitchen")
-- Sujeito: autônomo brasileiro, 25-50 anos — VARIAR gênero, fenótipo e profissão entre variações
-- Vestimenta: casual profissional adequada — consultora de casa usa blusa social ou camiseta limpa, chef usa jaleco, fotógrafo usa roupa casual com câmera. NUNCA: regata, chinelo, roupa de lazer
-- Ambiente preferencial: home office bem equipado (escrivaninha organizada em apartamento com boa luz), coworking informal, café de bairro enquanto trabalha em laptop, consultório ou estúdio simples. EVITAR: sala de reunião corporativa envidraçada, fundo clean de estúdio, cenário visivelmente "montado"
-- Documentário = autêntico e honesto, NÃO = pobreza, NÃO = aspiracional fake corporativo. Digno, real, brasileiro.
-- Diversificar profissão, gênero, etnia e tipo de ambiente entre as variações
+- Image prompts em inglês, mín 60 palavras — estética fotografia editorial brasileira, quente e autêntica, NÃO banco de imagens americano, NÃO escritório corporativo
+- Color grading obrigatório: tons âmbar/dourados quentes — luz de entardecer, janela de apartamento, luz ambiente quente
+- Dois modos válidos — escolha o mais impactante por variação:
+  MODO A (DOCUMENTAL): cena real em ambiente brasileiro — apartamento com vista de prédios residenciais pela janela, oficina ou comércio de bairro, rua de paralelepípedo ao entardecer, interior residencial com luz natural quente. Sujeito em ação real, composição candidata.
+  MODO B (RETRATO EDITORIAL): sujeito centralizado de frente segurando a ferramenta da profissão, fundo texturizado neutro quente (parede de reboco antigo, taupe arenoso, textura de papel kraft), luz suave difusa quente, leve borda envelhecida estilo fotografia antiga.
+- Sujeito: autônomo brasileiro, 25-50 anos, fenótipo diverso (pardo, moreno, negro, branco) — VARIAR entre variações
+- Roupa: casual da profissão — camiseta, jeans, uniforme simples, roupa de trabalho real. NUNCA: terno executivo, visual corporativo americano, business casual genérico
+- PROIBIDO: escritório envidraçado moderno, coworking com néon, laptop Apple em mesa branca minimalista, iluminação fria de estúdio, composição de stock photo, estética corporativa americana
+- Diversificar profissão, gênero, etnia e tipo de cena entre as variações
 
 JSON:
 {
